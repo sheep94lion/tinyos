@@ -16,11 +16,13 @@ module EasyCollectionC {
 	uses interface AMSend;
 	uses interface Read<uint16_t> as readTemp;
     uses interface Read<uint16_t> as readHumidity;
+    uses interface Read<uint16_t> as readPhoto;
 }
 implementation {
 	uint16_t data = 0;
 	uint16_t TempData = 0;
 	uint16_t HumidityData = 0;
+	uint16_t PhotoData = 0;
 	message_t packet;
 	message_t serialpacket;
 	bool sendBusy = FALSE;
@@ -65,6 +67,7 @@ implementation {
 		msg->nodeid = TOS_NODE_ID;
 		msg->TempData = TempData;
 		msg->HumidityData = HumidityData;
+		msg->PhotoData = PhotoData;
 
 		if (call Send.send(&packet, sizeof(EasyCollectionMsg)) != SUCCESS){
 			call Leds.led0Toggle();
@@ -77,9 +80,9 @@ implementation {
 
 	event void Timer.fired() {
 		data++;
-		call Leds.led2Toggle();
 		call readTemp.read();
 		call readHumidity.read();
+		call readPhoto.read();
 		if (!sendBusy)
 			sendMessage();
 	}
@@ -98,7 +101,8 @@ implementation {
 			ecpkt->data = source->data;
 			ecpkt->nodeid = source->nodeid;
 			ecpkt->TempData = source->TempData;
-			ecpkt->HumidityData = source -> HumidityData;
+			ecpkt->HumidityData = source->HumidityData;
+			ecpkt->PhotoData = source->PhotoData;
 			if (call AMSend.send(AM_BROADCAST_ADDR, &serialpacket, sizeof(EasyCollectionMsg)) == SUCCESS) {
                 			SerialSendBusy = TRUE;
             			}
@@ -124,5 +128,14 @@ implementation {
             HumidityData = 0xffff;
         }
         call Leds.led1Toggle();
+    }
+    event void readPhoto.readDone(error_t result, uint16_t val){
+        if(result == SUCCESS){
+            PhotoData = val;
+        }
+        else{
+            PhotoData = 0xffff;
+        }
+        call Leds.led2Toggle();
     }
 }

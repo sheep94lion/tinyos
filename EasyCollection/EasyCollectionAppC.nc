@@ -6,6 +6,7 @@ implementation {
 	components CollectionC as Collector;
 	components new CollectionSenderC(0xee);
 	components new SensirionSht11C();
+	components new HamamatsuS1087ParC();
 	components new TimerMilliC();
 	components SerialActiveMessageC;
 	components new SerialAMSenderC(AM_EASYCOLLECTIONMSG);
@@ -24,4 +25,5 @@ implementation {
 	EasyCollectionC.Receive -> Collector.Receive[0xee];
 	EasyCollectionC.readTemp -> SensirionSht11C.Temperature;
 	EasyCollectionC.readHumidity -> SensirionSht11C.Humidity;
+	EasyCollectionC.readPhoto -> HamamatsuS1087ParC;
 }
