@@ -9,6 +9,9 @@ implementation {
 	components new HamamatsuS1087ParC();
 	components new TimerMilliC();
 	components SerialActiveMessageC;
+	components DisseminationC;
+	components new DisseminatorC(uint16_t, 0x1234) as Diss16CI;
+	components new DisseminatorC(uint16_t, 0x4321) as Diss16CC;
 	components new SerialAMSenderC(AM_EASYCOLLECTIONMSG);
 
 	EasyCollectionC.Packet -> SerialAMSenderC;
@@ -26,4 +29,10 @@ implementation {
 	EasyCollectionC.readTemp -> SensirionSht11C.Temperature;
 	EasyCollectionC.readHumidity -> SensirionSht11C.Humidity;
 	EasyCollectionC.readPhoto -> HamamatsuS1087ParC;
+	EasyCollectionC.DisseminationControl -> DisseminationC;
+	EasyCollectionC.ValueI -> Diss16CI;
+	EasyCollectionC.UpdateI -> Diss16CI;
+	EasyCollectionC.ValueC -> Diss16CC;
+	EasyCollectionC.UpdateC -> Diss16CC;
+
 }

@@ -2,15 +2,14 @@
 #define EASYCOLLECTION_H
 
 enum {
-	AM_EASYCOLLECTIONMSG = 23
+	AM_EASYCOLLECTIONMSG = 23,
+	NREADINGS = 5
 };
 
 typedef nx_struct EasyCollectionMsg {
-	nx_uint16_t nodeid;
-	nx_uint16_t data;
-	nx_uint16_t TempData;
-	nx_uint16_t HumidityData;
-	nx_uint16_t PhotoData;
+	nx_uint16_t id;
+	nx_uint16_t count;
+	nx_uint16_t reading[NREADINGS];
 } EasyCollectionMsg;
 
 #endif

@@ -1,7 +1,8 @@
 COMPONENT=EasyCollectionAppC
 CFLAGS += -I$(TOSDIR)/lib/net \
                    -I$(TOSDIR)/lib/net/le \
-                   -I$(TOSDIR)/lib/net/ctp
+                   -I$(TOSDIR)/lib/net/ctp \
+                   -I$(TOSDIR)/lib/net/drip
 BUILD_EXTRA_DEPS += EasyCollection.class
 CLEAN_EXTRA = *.class EasyCollectionMsg.java
 
