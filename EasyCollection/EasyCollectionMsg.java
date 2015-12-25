@@ -7,12 +7,12 @@
 public class EasyCollectionMsg extends net.tinyos.message.Message {
 
     /** The default size of this message type in bytes. */
-    public static final int DEFAULT_MESSAGE_SIZE = 2;
+    public static final int DEFAULT_MESSAGE_SIZE = 8;
 
     /** The Active Message type associated with this message. */
     public static final int AM_TYPE = 23;
 
-    /** Create a new EasyCollectionMsg of size 2. */
+    /** Create a new EasyCollectionMsg of size 8. */
     public EasyCollectionMsg() {
         super(DEFAULT_MESSAGE_SIZE);
         amTypeSet(AM_TYPE);
@@ -85,7 +85,16 @@ public class EasyCollectionMsg extends net.tinyos.message.Message {
     public String toString() {
       String s = "Message <EasyCollectionMsg> \n";
       try {
+        s += "  [nodeid=0x"+Long.toHexString(get_nodeid())+"]\n";
+      } catch (ArrayIndexOutOfBoundsException aioobe) { /* Skip field */ }
+      try {
         s += "  [data=0x"+Long.toHexString(get_data())+"]\n";
+      } catch (ArrayIndexOutOfBoundsException aioobe) { /* Skip field */ }
+      try {
+        s += "  [TempData=0x"+Long.toHexString(get_TempData())+"]\n";
+      } catch (ArrayIndexOutOfBoundsException aioobe) { /* Skip field */ }
+      try {
+        s += "  [HumidityData=0x"+Long.toHexString(get_HumidityData())+"]\n";
       } catch (ArrayIndexOutOfBoundsException aioobe) { /* Skip field */ }
       return s;
     }
@@ -93,9 +102,72 @@ public class EasyCollectionMsg extends net.tinyos.message.Message {
     // Message-type-specific access methods appear below.
 
     /////////////////////////////////////////////////////////
-    // Accessor methods for field: data
+    // Accessor methods for field: nodeid
     //   Field type: int, unsigned
     //   Offset (bits): 0
+    //   Size (bits): 16
+    /////////////////////////////////////////////////////////
+
+    /**
+     * Return whether the field 'nodeid' is signed (false).
+     */
+    public static boolean isSigned_nodeid() {
+        return false;
+    }
+
+    /**
+     * Return whether the field 'nodeid' is an array (false).
+     */
+    public static boolean isArray_nodeid() {
+        return false;
+    }
+
+    /**
+     * Return the offset (in bytes) of the field 'nodeid'
+     */
+    public static int offset_nodeid() {
+        return (0 / 8);
+    }
+
+    /**
+     * Return the offset (in bits) of the field 'nodeid'
+     */
+    public static int offsetBits_nodeid() {
+        return 0;
+    }
+
+    /**
+     * Return the value (as a int) of the field 'nodeid'
+     */
+    public int get_nodeid() {
+        return (int)getUIntBEElement(offsetBits_nodeid(), 16);
+    }
+
+    /**
+     * Set the value of the field 'nodeid'
+     */
+    public void set_nodeid(int value) {
+        setUIntBEElement(offsetBits_nodeid(), 16, value);
+    }
+
+    /**
+     * Return the size, in bytes, of the field 'nodeid'
+     */
+    public static int size_nodeid() {
+        return (16 / 8);
+    }
+
+    /**
+     * Return the size, in bits, of the field 'nodeid'
+     */
+    public static int sizeBits_nodeid() {
+        return 16;
+    }
+
+    /////////////////////////////////////////////////////////
+    // Accessor methods for field: data
+    //   Field type: int, unsigned
+    //   Offset (bits): 16
     //   Size (bits): 16
     /////////////////////////////////////////////////////////
 
@@ -117,14 +189,14 @@ public class EasyCollectionMsg extends net.tinyos.message.Message {
      * Return the offset (in bytes) of the field 'data'
      */
     public static int offset_data() {
-        return (0 / 8);
+        return (16 / 8);
     }
 
     /**
      * Return the offset (in bits) of the field 'data'
      */
     public static int offsetBits_data() {
-        return 0;
+        return 16;
     }
 
     /**
@@ -152,6 +224,132 @@ public class EasyCollectionMsg extends net.tinyos.message.Message {
      * Return the size, in bits, of the field 'data'
      */
     public static int sizeBits_data() {
+        return 16;
+    }
+
+    /////////////////////////////////////////////////////////
+    // Accessor methods for field: TempData
+    //   Field type: int, unsigned
+    //   Offset (bits): 32
+    //   Size (bits): 16
+    /////////////////////////////////////////////////////////
+
+    /**
+     * Return whether the field 'TempData' is signed (false).
+     */
+    public static boolean isSigned_TempData() {
+        return false;
+    }
+
+    /**
+     * Return whether the field 'TempData' is an array (false).
+     */
+    public static boolean isArray_TempData() {
+        return false;
+    }
+
+    /**
+     * Return the offset (in bytes) of the field 'TempData'
+     */
+    public static int offset_TempData() {
+        return (32 / 8);
+    }
+
+    /**
+     * Return the offset (in bits) of the field 'TempData'
+     */
+    public static int offsetBits_TempData() {
+        return 32;
+    }
+
+    /**
+     * Return the value (as a int) of the field 'TempData'
+     */
+    public int get_TempData() {
+        return (int)getUIntBEElement(offsetBits_TempData(), 16);
+    }
+
+    /**
+     * Set the value of the field 'TempData'
+     */
+    public void set_TempData(int value) {
+        setUIntBEElement(offsetBits_TempData(), 16, value);
+    }
+
+    /**
+     * Return the size, in bytes, of the field 'TempData'
+     */
+    public static int size_TempData() {
+        return (16 / 8);
+    }
+
+    /**
+     * Return the size, in bits, of the field 'TempData'
+     */
+    public static int sizeBits_TempData() {
+        return 16;
+    }
+
+    /////////////////////////////////////////////////////////
+    // Accessor methods for field: HumidityData
+    //   Field type: int, unsigned
+    //   Offset (bits): 48
+    //   Size (bits): 16
+    /////////////////////////////////////////////////////////
+
+    /**
+     * Return whether the field 'HumidityData' is signed (false).
+     */
+    public static boolean isSigned_HumidityData() {
+        return false;
+    }
+
+    /**
+     * Return whether the field 'HumidityData' is an array (false).
+     */
+    public static boolean isArray_HumidityData() {
+        return false;
+    }
+
+    /**
+     * Return the offset (in bytes) of the field 'HumidityData'
+     */
+    public static int offset_HumidityData() {
+        return (48 / 8);
+    }
+
+    /**
+     * Return the offset (in bits) of the field 'HumidityData'
+     */
+    public static int offsetBits_HumidityData() {
+        return 48;
+    }
+
+    /**
+     * Return the value (as a int) of the field 'HumidityData'
+     */
+    public int get_HumidityData() {
+        return (int)getUIntBEElement(offsetBits_HumidityData(), 16);
+    }
+
+    /**
+     * Set the value of the field 'HumidityData'
+     */
+    public void set_HumidityData(int value) {
+        setUIntBEElement(offsetBits_HumidityData(), 16, value);
+    }
+
+    /**
+     * Return the size, in bytes, of the field 'HumidityData'
+     */
+    public static int size_HumidityData() {
+        return (16 / 8);
+    }
+
+    /**
+     * Return the size, in bits, of the field 'HumidityData'
+     */
+    public static int sizeBits_HumidityData() {
         return 16;
     }
 

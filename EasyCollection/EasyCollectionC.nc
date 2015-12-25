@@ -1,5 +1,6 @@
 #include <Timer.h>
 #include "EasyCollection.h"
+#include "SensirionSht11.h"
 module EasyCollectionC {
 	uses interface Boot;
 	uses interface SplitControl as RadioControl;
@@ -13,9 +14,13 @@ module EasyCollectionC {
 	uses interface Packet;
 	uses interface AMPacket;
 	uses interface AMSend;
-
+	uses interface Read<uint16_t> as readTemp;
+    uses interface Read<uint16_t> as readHumidity;
 }
 implementation {
+	uint16_t data = 0;
+	uint16_t TempData = 0;
+	uint16_t HumidityData = 0;
 	message_t packet;
 	message_t serialpacket;
 	bool sendBusy = FALSE;
@@ -56,16 +61,25 @@ implementation {
 
 	void sendMessage() {
 		EasyCollectionMsg* msg = (EasyCollectionMsg*)call Send.getPayload(&packet, sizeof(EasyCollectionMsg));
-		msg->data = 0xAAAA;
+		msg->data = data;
+		msg->nodeid = TOS_NODE_ID;
+		msg->TempData = TempData;
+		msg->HumidityData = HumidityData;
 
-		if (call Send.send(&packet, sizeof(EasyCollectionMsg)) != SUCCESS)
-			call Leds.led0On();
+		if (call Send.send(&packet, sizeof(EasyCollectionMsg)) != SUCCESS){
+			call Leds.led0Toggle();
+			call Leds.led1Toggle();
+			call Leds.led2Toggle();
+		}
 		else
 			sendBusy = TRUE;
 	}
 
 	event void Timer.fired() {
+		data++;
 		call Leds.led2Toggle();
+		call readTemp.read();
+		call readHumidity.read();
 		if (!sendBusy)
 			sendMessage();
 	}
@@ -82,10 +96,33 @@ implementation {
 			EasyCollectionMsg* source = (EasyCollectionMsg*) payload;
 			EasyCollectionMsg* ecpkt = (EasyCollectionMsg*)(call Packet.getPayload(&serialpacket, NULL));
 			ecpkt->data = source->data;
+			ecpkt->nodeid = source->nodeid;
+			ecpkt->TempData = source->TempData;
+			ecpkt->HumidityData = source -> HumidityData;
 			if (call AMSend.send(AM_BROADCAST_ADDR, &serialpacket, sizeof(EasyCollectionMsg)) == SUCCESS) {
                 			SerialSendBusy = TRUE;
             			}
 		}
 		return msg;
 	}
+	event void readTemp.readDone(error_t result, uint16_t val){
+        if(result == SUCCESS){
+            val = -40.1 + 0.01*val;
+            TempData = val;
+        }
+        else{
+            TempData = 0xffff;
+        }
+        call Leds.led0Toggle();
+    }
+    event void readHumidity.readDone(error_t result, uint16_t val){
+        if(result == SUCCESS){
+            HumidityData = -4 + 4*val/100 + (-28/1000/10000)*(val*val);
+            HumidityData = (TempData-25)*(1/100+8*val/100/1000)+HumidityData;
+        }
+        else{
+            HumidityData = 0xffff;
+        }
+        call Leds.led1Toggle();
+    }
 }

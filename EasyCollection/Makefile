@@ -9,5 +9,6 @@ EasyCollection.class: $(wildcard *.java) EasyCollectionMsg.java
 	javac *.java
 EasyCollectionMsg.java:
 	mig java -target=null -java-classname=EasyCollectionMsg EasyCollection.h EasyCollectionMsg -o $@
-
+clean :
+	rm EasyCollection.class EasyCollectionMsg.java 
 include $(MAKERULES)

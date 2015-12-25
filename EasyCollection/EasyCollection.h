@@ -6,7 +6,10 @@ enum {
 };
 
 typedef nx_struct EasyCollectionMsg {
+	nx_uint16_t nodeid;
 	nx_uint16_t data;
+	nx_uint16_t TempData;
+	nx_uint16_t HumidityData;
 } EasyCollectionMsg;
 
 #endif

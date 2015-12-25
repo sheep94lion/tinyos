@@ -5,6 +5,7 @@ implementation {
 	components EasyCollectionC, MainC, LedsC, ActiveMessageC;
 	components CollectionC as Collector;
 	components new CollectionSenderC(0xee);
+	components new SensirionSht11C();
 	components new TimerMilliC();
 	components SerialActiveMessageC;
 	components new SerialAMSenderC(AM_EASYCOLLECTIONMSG);
@@ -21,4 +22,6 @@ implementation {
 	EasyCollectionC.Send -> CollectionSenderC;
 	EasyCollectionC.RootControl -> Collector;
 	EasyCollectionC.Receive -> Collector.Receive[0xee];
+	EasyCollectionC.readTemp -> SensirionSht11C.Temperature;
+	EasyCollectionC.readHumidity -> SensirionSht11C.Humidity;
 }
