@@ -30,6 +30,7 @@ implementation {
 	uint16_t HumidityData = 0;
 	uint16_t PhotoData = 0;
 	uint16_t version = 0;
+	uint16_t interval = 0;
 	message_t packet;
 	message_t serialpacket;
 	message_t sendBufT;
@@ -94,15 +95,6 @@ implementation {
 	void sendMessageT() {
 		localT.count = count;
 		memcpy(call Send.getPayload(&sendBufT, sizeof(localT)), &localT, sizeof(localT));
-		/*
-		EasyCollectionMsg* msg = (EasyCollectionMsg*)call Send.getPayload(&packet, sizeof(EasyCollectionMsg));
-		msg->data = data;
-		msg->nodeid = TOS_NODE_ID;
-		msg->TempData = TempData;
-		msg->HumidityData = HumidityData;
-		msg->PhotoData = PhotoData;
-		*/
-
 		if (call Send.send(&sendBufT, sizeof(EasyCollectionMsg)) != SUCCESS){
 
 			trysendT = FALSE;
@@ -141,7 +133,7 @@ implementation {
 
 		if (readingP == NREADINGS){
 			//call Leds.led1Toggle();
-			ifreadP = FALSE;		
+			ifreadP = FALSE;        
 			if(!sendBusy && !ifsendP && !trysendP){
 				localP.count++;
 				//call Leds.led0Toggle();
