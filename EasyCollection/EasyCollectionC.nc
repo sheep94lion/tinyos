@@ -297,8 +297,8 @@ implementation {
 	}
 	event void ValueC.changed() {
 		const uint16_t* newCount = call ValueC.get();
-		if (newCount > count) {
-			count = newCount;
+		if (*newCount > count) {
+			count = *newCount;
 			suppressCountChange = TRUE;
 		}
 	}
