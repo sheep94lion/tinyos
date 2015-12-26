@@ -69,11 +69,11 @@ class Graph extends JPanel
     return (int)(sx / xscale + gx0 + 0.5);
     }
 
-    Graph(Window parent, int offset, int number) {
+    Graph(Window parent, int offset, int number, int yInit) {
     this.parent = parent;
     this.offset = offset;
     this.number = number;
-    gy0 = 0; gy1 = 0xffff;
+    gy0 = 0; gy1 = yInit;
     gx0 = 0; gx1 = MIN_WIDTH << scale;
     }
 
@@ -104,11 +104,14 @@ class Graph extends JPanel
         System.out.println(count + " " + number);
         for (int i = number; i < count; i+=3) {
         clipped.setColor(parent.moteListModel.getColor(i));
-        drawGraph(clipped, parent.moteListModel.get(i));
+        drawGraph(clipped, getNOdeId(parent.moteListModel.get(i)));
         }
     }
     }
-
+    int getNOdeId(String typeString){
+        String array[] = typeString.split(" ");
+        return Integer.parseInt(array[1]);
+    }
     /* Draw the Y-axis */
     protected void drawYAxis(Graphics2D g) {
     int axis_x = BORDER_LEFT - 1;
