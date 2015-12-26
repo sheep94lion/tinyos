@@ -7,11 +7,11 @@ implementation {
 	components new CollectionSenderC(0xee);
 	components new SensirionSht11C();
 	components new HamamatsuS1087ParC();
-	components new TimerMilliC();
+	components new TimerMilliC() as TimerMilliC0;
+	components new TimerMilliC() as TimerMilliC1;
 	components SerialActiveMessageC;
 	components DisseminationC;
 	components new DisseminatorC(uint16_t, 0x1234) as Diss16CI;
-	components new DisseminatorC(uint16_t, 0x4321) as Diss16CC;
 	components new SerialAMSenderC(AM_OSCILLOSCOPE);
 	components new SerialAMReceiverC(AM_OSCILLOSCOPE);
 
@@ -24,7 +24,8 @@ implementation {
 	EasyCollectionC.RadioControl -> ActiveMessageC;
 	EasyCollectionC.RoutingControl -> Collector;
 	EasyCollectionC.Leds -> LedsC;
-	EasyCollectionC.Timer -> TimerMilliC;
+	EasyCollectionC.Timer0 -> TimerMilliC0;
+	EasyCollectionC.Timer1 -> TimerMilliC1;
 	EasyCollectionC.Send -> CollectionSenderC;
 	EasyCollectionC.RootControl -> Collector;
 	EasyCollectionC.CReceive -> Collector.Receive[0xee];
@@ -34,7 +35,5 @@ implementation {
 	EasyCollectionC.DisseminationControl -> DisseminationC;
 	EasyCollectionC.ValueI -> Diss16CI;
 	EasyCollectionC.UpdateI -> Diss16CI;
-	EasyCollectionC.ValueC -> Diss16CC;
-	EasyCollectionC.UpdateC -> Diss16CC;
 
 }

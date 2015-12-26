@@ -9,7 +9,8 @@ module EasyCollectionC {
 	uses interface StdControl as DisseminationControl;
 	uses interface Send;
 	uses interface Leds;
-	uses interface Timer<TMilli>;
+	uses interface Timer<TMilli> as Timer0;
+	uses interface Timer<TMilli> as Timer1;
 	uses interface RootControl;
 	uses interface Receive as CReceive;
 	uses interface Receive as SReceive;
@@ -21,25 +22,22 @@ module EasyCollectionC {
 	uses interface Read<uint16_t> as readPhoto;
 	uses interface DisseminationValue<uint16_t> as ValueI;
 	uses interface DisseminationUpdate<uint16_t> as UpdateI;
-	uses interface DisseminationValue<uint16_t> as ValueC;
-	uses interface DisseminationUpdate<uint16_t> as UpdateC;
 }
 implementation {
-	uint16_t count = 0;
+	uint16_t seq = 0;
 	uint16_t TempData = 0;
 	uint16_t HumidityData = 0;
 	uint16_t PhotoData = 0;
 	uint16_t version = 0;
 	uint16_t interval = DEFAULT_INTERVAL;
 	message_t packet;
-	message_t serialpacket;
-	message_t sendBufT;
-	message_t sendBufP;
-	message_t sendBufH;
-	EasyCollectionMsg localT, localP, localH;
-	uint8_t readingT, readingP, readingH;
-	bool ifsendP, ifsendT, ifsendH;
-	bool trysendP, trysendT, trysendH;
+	message_t serialpacketP, serialpacketT, serialpacketH;
+	message_t sendBuf;
+
+	EasyCollectionMsg local;
+	oscilloscope_t sendqueue[50];
+	uint8_t start = 0;
+	uint8_t end = 0;
 	bool sendBusy = FALSE;
 	bool SerialSendBusy = FALSE;
 	bool suppressCountChange = FALSE;
@@ -48,18 +46,7 @@ implementation {
 	event void Boot.booted(){
 		call RadioControl.start();
 		call AMControl.start();
-		localP.id = TOS_NODE_ID * 10 + 1;
-		localT.id = TOS_NODE_ID * 10 + 2;
-		localH.id = TOS_NODE_ID * 10 + 3;
-		localP.seq = 0;
-		localT.seq = 0;
-		localH.seq = 0;
-		ifsendH = FALSE;
-		ifsendT = FALSE;
-		ifsendP = FALSE;
-		trysendP = FALSE;
-		trysendH = FALSE;
-		trysendT = FALSE;
+		local.id = TOS_NODE_ID;
 	}
 
 	event void RadioControl.startDone(error_t err){
@@ -67,10 +54,15 @@ implementation {
 			call RadioControl.start();
 		else {
 			call RoutingControl.start();
-			if (TOS_NODE_ID == 1)
+			if (TOS_NODE_ID == 1){
 				call RootControl.setRoot();
-			else
-				call Timer.startPeriodic(DEFAULT_INTERVAL);
+				call Timer1.startOneShot(200);
+			}
+				
+			else{
+				call Timer0.startPeriodic(DEFAULT_INTERVAL);
+			}
+				
 		}
 	}
 
@@ -87,158 +79,120 @@ implementation {
 	event void AMControl.stopDone(error_t err) {}
 
 	event void AMSend.sendDone(message_t* msg, error_t error) {
-		if (&serialpacket == msg) {
-			SerialSendBusy = FALSE;
+		start = (start + 1) % 50;
+		if (end != start) {
+			oscilloscope_t* ecpkt = (oscilloscope_t*)(call Packet.getPayload(&serialpacketP, NULL));
+			ecpkt->id = sendqueue[start].id;
+			ecpkt->count = sendqueue[start].count;
+			ecpkt->readings[0] = sendqueue[start].readings[0];
+			ecpkt->version = sendqueue[start].version;
+			ecpkt->interval = sendqueue[start].interval;
+			call AMSend.send(AM_BROADCAST_ADDR, &serialpacketP, sizeof(oscilloscope_t));
+		} else {
+			call Timer1.startOneShot(200);
 		}
 	}
 
-	void sendMessageT() {
-		localT.count = count;
-		memcpy(call Send.getPayload(&sendBufT, sizeof(localT)), &localT, sizeof(localT));
-		if (call Send.send(&sendBufT, sizeof(EasyCollectionMsg)) != SUCCESS){
-
-			trysendT = FALSE;
+	void sendMessage() {
+		memcpy(call Send.getPayload(&sendBuf, sizeof(local)), &local, sizeof(local));
+		if (call Send.send(&sendBuf, sizeof(EasyCollectionMsg)) != SUCCESS){
 		}
 		else{
-			localT.seq++;
-			sendBusy = TRUE;
-		}
-	}
-	void sendMessageP() {
-		localP.count = count;
-		memcpy(call Send.getPayload(&sendBufP, sizeof(localP)), &localP, sizeof(localP));
-		if (call Send.send(&sendBufP, sizeof(EasyCollectionMsg)) != SUCCESS){
-
-			trysendP = FALSE;
-		}
-		else{
-			localP.seq++;
-			sendBusy = TRUE;
-		}
-	}
-	void sendMessageH() {
-		localH.count = count;
-		memcpy(call Send.getPayload(&sendBufH, sizeof(localH)), &localH, sizeof(localH));
-		if (call Send.send(&sendBufH, sizeof(EasyCollectionMsg)) != SUCCESS){
-			trysendH = FALSE;
-		}
-		else{
-			localH.seq++;
 			sendBusy = TRUE;
 		}
 	}
 
-	event void Timer.fired() {
-		//call Leds.led2Toggle();
-		bool ifreadP = TRUE;
-		bool ifreadT = TRUE;
-		bool ifreadH = TRUE;
+	event void Timer0.fired() {
+		seq++;
+		local.seq = seq;
+		call readTemp.read();
+		call readHumidity.read();
+		call readTemp.read();
+		sendMessage();
+	}
 
-		if (readingP == NREADINGS){
-			//call Leds.led1Toggle();
-			ifreadP = FALSE;        
-			if(!sendBusy && !ifsendP && !trysendP){
-				//localP.seq++;
-				//call Leds.led0Toggle();
-				trysendP = TRUE;
-				sendMessageP();
-			}
+	event void Timer1.fired() {
+		call Leds.led1Toggle();
+		if (end != start) {
+			oscilloscope_t* ecpkt = (oscilloscope_t*)(call Packet.getPayload(&serialpacketP, NULL));
+			ecpkt->id = sendqueue[start].id;
+			ecpkt->count = sendqueue[start].count;
+			ecpkt->readings[0] = sendqueue[start].readings[0];
+			ecpkt->version = sendqueue[start].version;
+			ecpkt->interval = sendqueue[start].interval;
+			call AMSend.send(AM_BROADCAST_ADDR, &serialpacketP, sizeof(oscilloscope_t));
+		} else {
+			call Timer1.startOneShot(200);
 		}
-		if (readingT == NREADINGS){
-			ifreadT = FALSE;
-			if(!sendBusy && !ifsendT && !trysendT){
-				//localT.seq++;
-				//call Leds.led1Toggle();
-				trysendT = TRUE;
-				sendMessageT();
-			}
-			//call Leds.led1Toggle();
-		}
-		if (readingH == NREADINGS){
-			//call Leds.led1Toggle();
-			ifreadH = FALSE;
-			if(!sendBusy && !ifsendH && !trysendH){
-				//localH.seq++;
-				//call Leds.led2Toggle();
-				trysendH = TRUE;
-				sendMessageH();
-			}
-		}
-		
-		if(ifreadT){
-			call readTemp.read();
-		}
-		if(ifreadH){
-			call readHumidity.read();
-		}
-		if(ifreadP){
-			call readPhoto.read();
-		}
-				
 	}
 
 	event void Send.sendDone(message_t* m, error_t err) {
-		//call Leds.led1Toggle();
-		EasyCollectionMsg *msg = call Send.getPayload(m, sizeof(EasyCollectionMsg));
 		sendBusy = FALSE;
-		if (err != SUCCESS){
-			//call Leds.led0Toggle();
-			if (readingP == NREADINGS) {
-				trysendP = FALSE;
-			}else if (readingT == NREADINGS){
-				trysendT = FALSE;
-			}else if (readingH == NREADINGS){
-				trysendH = FALSE;
-			}
-			return;
-		}
-		//call Leds.led0Toggle();
-		if (msg->id == localP.id) {
-			call Leds.led0Toggle();
-			readingP = 0;
-			ifsendP = TRUE;
-			trysendP = FALSE;
-		}else if (msg->id == localT.id){
-			call Leds.led1Toggle();
-			readingT = 0;
-			ifsendT = TRUE;
-			trysendT = FALSE;
-		}else if (msg->id == localH.id){
-			call Leds.led2Toggle();
-			readingH = 0;
-			ifsendH = TRUE;
-			trysendH = FALSE;
-		}
-		if(ifsendH && ifsendT && ifsendP){
-			if (!suppressCountChange) {
-				count++;
-				call UpdateC.change(&count);
-			}
-			suppressCountChange = FALSE;
-			trysendP = FALSE;
-			trysendH = FALSE;
-			trysendT = FALSE;
-			ifsendP = FALSE;
-			ifsendT = FALSE;
-			ifsendH = FALSE;
-		}
 	}
 
 	event message_t* CReceive.receive(message_t* msg, void* payload, uint8_t len) {
-		call Leds.led1Toggle();
+		//call Leds.led0Toggle();
+
+		EasyCollectionMsg* source = (EasyCollectionMsg*) payload;
+		sendqueue[end].id = source->id * 10 + 1;
+		sendqueue[end].count = source->seq;
+		sendqueue[end].readings[0] = source->PhotoData;
+		sendqueue[end].version = version;
+		sendqueue[end].interval = interval;
+		end = (end + 1) % 50;
+		sendqueue[end].id = source->id * 10 + 2;
+		sendqueue[end].count = source->seq;
+		sendqueue[end].readings[0] = source->TempData;
+		sendqueue[end].version = version;
+		sendqueue[end].interval = interval;
+		end = (end + 1) % 50;
+		sendqueue[end].id = source->id * 10 + 3;
+		sendqueue[end].count = source->seq;
+		sendqueue[end].readings[0] = source->HumidityData;
+		sendqueue[end].version = version;
+		sendqueue[end].interval = interval;
+		end = (end + 1) % 50;
+		call Leds.led0Toggle();
+		return msg;
+		/*
 		if (!SerialSendBusy) {
 			EasyCollectionMsg* source = (EasyCollectionMsg*) payload;
-			oscilloscope_t* ecpkt = (oscilloscope_t*)(call Packet.getPayload(&serialpacket, NULL));
-			ecpkt->id = source->id;
-			ecpkt->count = source->count;
-			memcpy(ecpkt->readings, source->reading, (sizeof (nx_uint16_t))*NREADINGS);
-			ecpkt->version = version;
-			ecpkt->interval = interval;
-			if (call AMSend.send(AM_BROADCAST_ADDR, &serialpacket, sizeof(oscilloscope_t)) == SUCCESS) {
+			oscilloscope_t* ecpktP = (oscilloscope_t*)(call Packet.getPayload(&serialpacketP, NULL));
+			oscilloscope_t* ecpktT = (oscilloscope_t*)(call Packet.getPayload(&serialpacketT, NULL));
+			oscilloscope_t* ecpktH = (oscilloscope_t*)(call Packet.getPayload(&serialpacketH, NULL));
+			ecpktP->id = source->id * 10 + 1;
+			ecpktP->count = source->seq;
+			ecpktP->readings[0] = source->PhotoData;
+			ecpktP->version = version;
+			ecpktP->interval = interval;
+			ecpktT->id = source->id * 10 + 2;
+			ecpktT->count = source->seq;
+			ecpktT->readings[0] = source->TempData;
+			ecpktT->version = version;
+			ecpktT->interval = interval;
+			ecpktH->id = source->id * 10 + 3;
+			ecpktH->count = source->seq;
+			ecpktH->readings[0] = source->HumidityData;
+			ecpktH->version = version;
+			ecpktH->interval = interval;
+			memcpy(&sendqueue[end], ecpktP, (sizeof (oscilloscope_t)));
+			end = (end + 1) % 50;
+			memcpy(&sendqueue[end], ecpktP, (sizeof (oscilloscope_t)));
+			end = (end + 1) % 50;
+			memcpy(&sendqueue[end], ecpktP, (sizeof (oscilloscope_t)));
+			end = (end + 1) % 50;
+			if (call AMSend.send(AM_BROADCAST_ADDR, &serialpacketP, sizeof(oscilloscope_t)) == SUCCESS) {
+				SerialSendBusy = TRUE;
+			}
+			if (call AMSend.send(AM_BROADCAST_ADDR, &serialpacketT, sizeof(oscilloscope_t)) == SUCCESS) {
+				SerialSendBusy = TRUE;
+			}
+			if (call AMSend.send(AM_BROADCAST_ADDR, &serialpacketH, sizeof(oscilloscope_t)) == SUCCESS) {
 				SerialSendBusy = TRUE;
 			}
 		}
 		return msg;
+		*/
 	}
 	event message_t* SReceive.receive(message_t* msg, void* payload, uint8_t len) {
 		oscilloscope_t *omsg = payload;
@@ -257,9 +211,7 @@ implementation {
 		else{
 			TempData = 0xffff;
 		}
-		if (readingT < NREADINGS) {
-			localT.reading[readingT++] = TempData;
-		}
+		local.TempData = TempData;
 		
 	}
 	event void readHumidity.readDone(error_t result, uint16_t val){
@@ -270,9 +222,7 @@ implementation {
 		else{
 			HumidityData = 0xffff;
 		}
-		if (readingH < NREADINGS) {
-			localH.reading[readingH++] = HumidityData;
-		}
+		local.HumidityData = HumidityData;
 		
 	}
 	event void readPhoto.readDone(error_t result, uint16_t val){
@@ -282,24 +232,14 @@ implementation {
 		else{
 			PhotoData = 0xffff;
 		}
-		if (readingP < NREADINGS) {
-			localP.reading[readingP++] = PhotoData;
-		}
-		
-		
+		local.PhotoData = PhotoData;
+
 	}
 	event void ValueI.changed() {
 		const uint16_t* newInterval = call ValueI.get();
 		interval = *newInterval;
 		if (TOS_NODE_ID != 1){
-			call Timer.startPeriodic(interval);
-		}
-	}
-	event void ValueC.changed() {
-		const uint16_t* newCount = call ValueC.get();
-		if (*newCount > count) {
-			count = *newCount;
-			suppressCountChange = TRUE;
+			call Timer0.startPeriodic(interval);
 		}
 	}
 }

@@ -9,9 +9,10 @@ enum {
 
 typedef nx_struct EasyCollectionMsg {
 	nx_uint16_t id;
-	nx_uint16_t count;
 	nx_uint16_t seq;
-	nx_uint16_t reading[NREADINGS];
+	nx_uint16_t TempData;
+	nx_uint16_t HumidityData;
+	nx_uint16_t PhotoData;
 } EasyCollectionMsg;
 
 typedef nx_struct oscilloscope {
