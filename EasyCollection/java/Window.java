@@ -136,17 +136,17 @@ class Window {
 	}
 
 	int getNodeId(String typeString){
-		String array[] = typeString.split(" ");
-        int num = Integer.parseInt(array[1]);
-        if(array[2] == "L"){
-            return num*10 + 1;
-        }
-        else if(array[2] == "T"){
-            return num*10 + 2;
-        }
-        else{
-            return num*10 + 3;
-        }
+		String[] array = typeString.split(" ");
+		int num = Integer.parseInt(array[1])*10;
+		if(array[2] == "L"){
+			return num + 1;
+		}
+		else if(array[2] == "T"){
+			return num + 2;
+		}
+		else{
+			return num + 3;
+		}
 	}
     } /* End of MoteTableModel */
 
