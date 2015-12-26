@@ -38,7 +38,9 @@ public class Oscilloscope implements MessageListener
     MoteIF mote;
     Data data;
     Window window;
-
+    int node, seqN;
+    int[] myData;
+    int numForThree;
     /* The current sampling period. If we receive a message from a mote
        with a newer version, we update our interval. If we receive a message
        with an older version, we broadcast a message with the current interval
@@ -54,6 +56,8 @@ public class Oscilloscope implements MessageListener
     window.setup();
     mote = new MoteIF(PrintStreamMessenger.err);
     mote.registerListener(new OscilloscopeMsg(), this);
+    numForThree = 0;
+    myData = new int[3];//light for 0, temperature for 1, humidity for 2
     }
 
     /* The data object has informed us that nodeId is a previously unknown
@@ -65,15 +69,38 @@ public class Oscilloscope implements MessageListener
     public synchronized void messageReceived(int dest_addr, 
             Message msg) {
     if (msg instanceof OscilloscopeMsg) {
+        int id;
         OscilloscopeMsg omsg = (OscilloscopeMsg)msg;
-
+        id = omsg.get_id();
         /* Update interval and mote data */
         periodUpdate(omsg.get_version(), omsg.get_interval());
-        data.update(omsg.get_id(), omsg.get_count(), omsg.get_readings());
-
+        data.update(id, omsg.get_count(), omsg.get_readings());
         /* Inform the GUI that new data showed up */
         window.newData();
+        node = id/10;
+        seqN = omsg.get_count();
+        myData[id%10 - 1] = omsg.get_readings()[0];
+        numForThree++;
+        if(numForThree == 3){
+          numForThree = 0; 
+          outputFile();
+        }
+        
     }
+    }
+
+
+    //output to result.txt
+    void outputFile(){
+      try{
+        FileWriter f = new FileWriter("result.txt", true);
+        f.write(node + " " + seqN + " " + myData[1] + 
+          " " + myData[2] + " " + myData[0] + "\r\n");
+        f.close();
+      }
+      catch(IOException e){
+        e.printStackTrace();
+      }
     }
 
     /* A potentially new version and interval has been received from the

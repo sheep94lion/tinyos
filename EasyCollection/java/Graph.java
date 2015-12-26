@@ -104,13 +104,23 @@ class Graph extends JPanel
         System.out.println(count + " " + number);
         for (int i = number; i < count; i+=3) {
         clipped.setColor(parent.moteListModel.getColor(i));
-        drawGraph(clipped, getNOdeId(parent.moteListModel.get(i)));
+        drawGraph(clipped, getNodeId(parent.moteListModel.get(i)));
         }
     }
     }
-    int getNOdeId(String typeString){
-        String array[] = typeString.split(" ");
-        return Integer.parseInt(array[1]);
+    int getNodeId(String typeString){
+        String[] array = typeString.split(" ");
+        int num = Integer.parseInt(array[1])*10;
+        System.out.println(array[2]);
+        if(array[2] == "L"){
+            return num + 1;
+        }
+        else if(array[2] == "T"){
+            return num + 2;
+        }
+        else{
+            return num + 3;
+        }
     }
     /* Draw the Y-axis */
     protected void drawYAxis(Graphics2D g) {

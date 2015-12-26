@@ -101,7 +101,7 @@ class Window {
 	    int i, len = motes.size();
 	    
 	    for (i = 0; ; i++) {
-		if (i == len || nodeId < getNOdeId(get(i))) {
+		if (i == len || nodeId < getNodeId(get(i))) {
 		    motes.add(i, getType(new Integer(nodeId)));
 		    // Cycle through a set of initial colors
 		    colors.add(i, cycle[cycleIndex++ % cycle.length]);
@@ -135,9 +135,18 @@ class Window {
 		return "ID " + nodeID + " " + typeString; 
 	}
 
-	int getNOdeId(String typeString){
+	int getNodeId(String typeString){
 		String[] array = typeString.split(" ");
-		return Integer.parseInt(array[1]);
+		int num = Integer.parseInt(array[1])*10;
+		if(array[2] == "L"){
+			return num + 1;
+		}
+		else if(array[2] == "T"){
+			return num + 2;
+		}
+		else{
+			return num + 3;
+		}
 	}
     } /* End of MoteTableModel */
 

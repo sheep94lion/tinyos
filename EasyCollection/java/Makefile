@@ -16,6 +16,7 @@ Oscilloscope.class: $(wildcard *.java) $(GEN)
 
 clean:
 	rm -f *.class $(GEN)
+	rm result.txt
 
 veryclean: clean
 	rm oscilloscope.jar
