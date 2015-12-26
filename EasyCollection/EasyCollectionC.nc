@@ -30,7 +30,7 @@ implementation {
 	uint16_t HumidityData = 0;
 	uint16_t PhotoData = 0;
 	uint16_t version = 0;
-	uint16_t interval = 0;
+	uint16_t interval = DEFAULT_INTERVAL;
 	message_t packet;
 	message_t serialpacket;
 	message_t sendBufT;
@@ -51,9 +51,9 @@ implementation {
 		localP.id = TOS_NODE_ID * 10 + 1;
 		localT.id = TOS_NODE_ID * 10 + 2;
 		localH.id = TOS_NODE_ID * 10 + 3;
-		localP.count = 0;
-		localT.count = 0;
-		localH.count = 0;
+		localP.seq = 0;
+		localT.seq = 0;
+		localH.seq = 0;
 		ifsendH = FALSE;
 		ifsendT = FALSE;
 		ifsendP = FALSE;
@@ -100,6 +100,7 @@ implementation {
 			trysendT = FALSE;
 		}
 		else{
+			localT.seq++;
 			sendBusy = TRUE;
 		}
 	}
@@ -111,6 +112,7 @@ implementation {
 			trysendP = FALSE;
 		}
 		else{
+			localP.seq++;
 			sendBusy = TRUE;
 		}
 	}
@@ -121,6 +123,7 @@ implementation {
 			trysendH = FALSE;
 		}
 		else{
+			localH.seq++;
 			sendBusy = TRUE;
 		}
 	}
@@ -135,7 +138,7 @@ implementation {
 			//call Leds.led1Toggle();
 			ifreadP = FALSE;        
 			if(!sendBusy && !ifsendP && !trysendP){
-				localP.count++;
+				//localP.seq++;
 				//call Leds.led0Toggle();
 				trysendP = TRUE;
 				sendMessageP();
@@ -144,7 +147,7 @@ implementation {
 		if (readingT == NREADINGS){
 			ifreadT = FALSE;
 			if(!sendBusy && !ifsendT && !trysendT){
-				localT.count++;
+				//localT.seq++;
 				//call Leds.led1Toggle();
 				trysendT = TRUE;
 				sendMessageT();
@@ -155,7 +158,7 @@ implementation {
 			//call Leds.led1Toggle();
 			ifreadH = FALSE;
 			if(!sendBusy && !ifsendH && !trysendH){
-				localH.count++;
+				//localH.seq++;
 				//call Leds.led2Toggle();
 				trysendH = TRUE;
 				sendMessageH();
@@ -211,6 +214,7 @@ implementation {
 				count++;
 				call UpdateC.change(&count);
 			}
+			suppressCountChange = FALSE;
 			trysendP = FALSE;
 			trysendH = FALSE;
 			trysendT = FALSE;
@@ -229,7 +233,7 @@ implementation {
 			ecpkt->count = source->count;
 			memcpy(ecpkt->readings, source->reading, (sizeof (nx_uint16_t))*NREADINGS);
 			ecpkt->version = version;
-			ecpkt->interval = DEFAULT_INTERVAL;
+			ecpkt->interval = interval;
 			if (call AMSend.send(AM_BROADCAST_ADDR, &serialpacket, sizeof(oscilloscope_t)) == SUCCESS) {
 				SerialSendBusy = TRUE;
 			}
@@ -239,9 +243,11 @@ implementation {
 	event message_t* SReceive.receive(message_t* msg, void* payload, uint8_t len) {
 		oscilloscope_t *omsg = payload;
 		if (omsg->version > version) {
+			version = omsg->version;
 			interval = omsg->interval;
 			call UpdateI.change(&interval);
 		}
+		return msg;
 	}
 	event void readTemp.readDone(error_t result, uint16_t val){
 		if(result == SUCCESS){
@@ -285,7 +291,9 @@ implementation {
 	event void ValueI.changed() {
 		const uint16_t* newInterval = call ValueI.get();
 		interval = *newInterval;
-		call Timer.startPeriodic(interval);
+		if (TOS_NODE_ID != 1){
+			call Timer.startPeriodic(interval);
+		}
 	}
 	event void ValueC.changed() {
 		const uint16_t* newCount = call ValueC.get();
