@@ -19,13 +19,16 @@ import java.util.*;
 class Window {
     Oscilloscope parent;
     Graph graph;
-    
+    Graph graph0;
+    Graph graph1;
     Font smallFont = new Font("Dialog", Font.PLAIN, 8);
     Font boldFont = new Font("Dialog", Font.BOLD, 12);
     Font normalFont = new Font("Dialog", Font.PLAIN, 12);
     MoteTableModel moteListModel; // GUI view of mote list
-    JLabel xLabel; // Label displaying X axis range
+    JLabel xLabel, xLabel0, xLabel1; // Label displaying X axis range
     JTextField sampleText, yText; // inputs for sample period and Y axis range
+    JTextField sampleText0, yText0; // inputs for sample period and Y axis range
+    JTextField sampleText1, yText1; // inputs for sample period and Y axis range
     JFrame frame;
 
     Window(Oscilloscope parent) {
@@ -35,7 +38,7 @@ class Window {
     /* A model for the mote table, and general utility operations on the mote
        list */
     class MoteTableModel extends AbstractTableModel {
-	private ArrayList<Integer> motes = new ArrayList<Integer>();
+	private ArrayList<String> motes = new ArrayList<String>();
 	private ArrayList<Color> colors = new ArrayList<Color>();
 
 	/* Initial mote colors cycle through this list. Add more colors if
@@ -49,7 +52,7 @@ class Window {
 	/* TableModel methods for achieving our table appearance */
 	public String getColumnName(int col) {
 	    if (col == 0) {
-		return "Mote";
+		return "Type";
 	    } else {
 		return "Color";
 	    }
@@ -77,12 +80,14 @@ class Window {
 
 	public synchronized void setValueAt(Object value, int row, int col) {
 	    colors.set(row, (Color)value);
-            fireTableCellUpdated(row, col);
+        fireTableCellUpdated(row, col);
+        graph1.repaint();
+        graph0.repaint();
 	    graph.repaint();
         }
 
 	/* Return mote id of i'th mote */
-	int get(int i) { return (motes.get(i)).intValue(); }
+	String get(int i) { return motes.get(i); }
 	
 	/* Return color of i'th mote */
 	Color getColor(int i)  { return colors.get(i); }
@@ -96,8 +101,8 @@ class Window {
 	    int i, len = motes.size();
 	    
 	    for (i = 0; ; i++) {
-		if (i == len || nodeId < get(i)) {
-		    motes.add(i, new Integer(nodeId));
+		if (i == len || nodeId < getNOdeId(get(i))) {
+		    motes.add(i, getType(new Integer(nodeId)));
 		    // Cycle through a set of initial colors
 		    colors.add(i, cycle[cycleIndex++ % cycle.length]);
 		    break;
@@ -108,9 +113,31 @@ class Window {
 	
 	/* Remove all motes */
 	void clear() {
-	    motes = new ArrayList<Integer>();
+	    motes = new ArrayList<String>();
 	    colors = new ArrayList<Color>();
 	    fireTableDataChanged();
+	}
+
+	String getType(int id){
+		int num = id;
+		int nodeID = num/10;
+		int type = num%10;
+		String typeString = "";
+		if(type == 1){
+			typeString = "L";
+		}
+		else if(type == 2){
+			typeString = "T";
+		}
+		else if(type == 3){
+			typeString = "H";
+		}
+		return "ID " + nodeID + " " + typeString; 
+	}
+
+	int getNOdeId(String typeString){
+		String[] array = typeString.split(" ");
+		return Integer.parseInt(array[1]);
 	}
     } /* End of MoteTableModel */
 
@@ -175,9 +202,16 @@ class Window {
 	motePanel.getViewport().add(moteList, null);
 	main.add(motePanel, BorderLayout.WEST);
 	
-	graph = new Graph(this);
-	main.add(graph, BorderLayout.CENTER);
-	
+	JPanel graphMain = new JPanel();
+	graphMain.setLayout(new BoxLayout(graphMain, BoxLayout.Y_AXIS));
+	main.add(graphMain, BorderLayout.CENTER);
+
+	graph = new Graph(this, 5, 0, 1000);
+	graphMain.add(graph);
+	graph0 = new Graph(this, 5, 1, 100);
+	graphMain.add(graph0);
+	graph1 = new Graph(this, 5, 2, 100);
+	graphMain.add(graph1);
 	// Controls. Organised using box layouts.
 	
 	// Sample period.
@@ -214,13 +248,83 @@ class Window {
 	    });
 	xControl.add(xLabel);
 	xControl.add(xSlider);
+	//0
+	xLabel0 = makeLabel("", JLabel.CENTER);
+	final JSlider xSlider0 = new JSlider(JSlider.HORIZONTAL, 0, 8, graph0.scale);
+	Hashtable<Integer, JLabel> xTable0 = new Hashtable<Integer, JLabel>();
+	for (int i = 0; i <= 8; i += 2) {
+	    xTable0.put(new Integer(i),
+		       makeSmallLabel("" + (Graph.MIN_WIDTH << i),
+				      JLabel.CENTER));
+	}
+	xSlider0.setLabelTable(xTable);
+	xSlider0.setPaintLabels(true);
+	graph0.updateXLabel();
+	graph0.setScale(graph0.scale);
+	xSlider0.addChangeListener(new ChangeListener() {
+		public void stateChanged(ChangeEvent e) {
+		    //if (!xSlider.getValueIsAdjusting())
+		    graph0.setScale((int)xSlider0.getValue());
+		}
+	    });
+	xControl.add(xLabel0);
+	xControl.add(xSlider0);
+	//1
+	xLabel1 = makeLabel("", JLabel.CENTER);
+	final JSlider xSlider1 = new JSlider(JSlider.HORIZONTAL, 0, 8, graph1.scale);
+	Hashtable<Integer, JLabel> xTable1 = new Hashtable<Integer, JLabel>();
+	for (int i = 0; i <= 8; i += 2) {
+	    xTable1.put(new Integer(i),
+		       makeSmallLabel("" + (Graph.MIN_WIDTH << i),
+				      JLabel.CENTER));
+	}
+	xSlider1.setLabelTable(xTable1);
+	xSlider1.setPaintLabels(true);
+	graph1.updateXLabel();
+	graph1.setScale(graph1.scale);
+	xSlider1.addChangeListener(new ChangeListener() {
+		public void stateChanged(ChangeEvent e) {
+		    //if (!xSlider.getValueIsAdjusting())
+		    graph1.setScale((int)xSlider1.getValue());
+		}
+	    });
+	xControl.add(xLabel1);
+	xControl.add(xSlider1);
 	
+
+	Box yControlMain = new Box(BoxLayout.Y_AXIS);
+	Box yControl = new Box(BoxLayout.X_AXIS);
+	Box yControl0 = new Box(BoxLayout.X_AXIS);
+	Box yControl1 = new Box(BoxLayout.X_AXIS);
+	yControlMain.add(yControl);
+	yControlMain.add(yControl0);
+	yControlMain.add(yControl1);
+
 	// Adjust Y-axis range.
-	JLabel yLabel = makeLabel("Y:", JLabel.RIGHT);
+	JLabel yLabel = makeLabel("light:", JLabel.RIGHT);
 	yText = makeTextField(12, new ActionListener() {
 		public void actionPerformed(ActionEvent e) { setYAxis(); }
 	    } );
 	yText.setText(graph.gy0 + " - " + graph.gy1);
+	yControl.add(yLabel);
+	yControl.add(yText);
+
+	//0
+	JLabel yLabel0 = makeLabel("temperature:", JLabel.RIGHT);
+	yText0 = makeTextField(12, new ActionListener() {
+		public void actionPerformed(ActionEvent e) { setYAxis0(); }
+	    } );
+	yText0.setText(graph0.gy0 + " - " + graph0.gy1);
+	yControl0.add(yLabel0);
+	yControl0.add(yText0);
+	//1
+	JLabel yLabel1 = makeLabel("humidity:", JLabel.RIGHT);
+	yText1 = makeTextField(12, new ActionListener() {
+		public void actionPerformed(ActionEvent e) { setYAxis1(); }
+	    } );
+	yText1.setText(graph1.gy0 + " - " + graph1.gy1);
+	yControl1.add(yLabel1);
+	yControl1.add(yText1);
 	
 	Box controls = new Box(BoxLayout.X_AXIS);
 	controls.add(clearButton);
@@ -231,8 +335,7 @@ class Window {
 	controls.add(Box.createHorizontalGlue());
 	controls.add(Box.createRigidArea(new Dimension(20, 0)));
 	controls.add(xControl);
-	controls.add(yLabel);
-	controls.add(yText);
+	controls.add(yControlMain);
 	main.add(controls, BorderLayout.SOUTH);
 
 	// The frame part
@@ -251,6 +354,8 @@ class Window {
 	    moteListModel.clear();
 	    parent.clear();
 	    graph.newData();
+	    graph0.newData();
+	    graph1.newData();
 	}
     }
 
@@ -265,6 +370,55 @@ class Window {
 		String max = val.substring(dash + 1).trim();
 
 		if (!graph.setYAxis(Integer.parseInt(min), Integer.parseInt(max))) {
+		    error("Invalid range " 
+			  + min 
+			  + " - " 
+			  + max 
+			  + " (expected values between 0 and 65535)");
+		}
+		return;
+	    }
+	}
+	catch (NumberFormatException e) { }
+	error("Invalid range " + val + " (expected NN-MM)");
+    }
+
+    /* User operation: set Y-axis range. */
+    void setYAxis0() {
+	String val = yText0.getText();
+
+	try {
+	    int dash = val.indexOf('-');
+	    if (dash >= 0) {
+		String min = val.substring(0, dash).trim();
+		String max = val.substring(dash + 1).trim();
+
+		if (!graph0.setYAxis(Integer.parseInt(min), Integer.parseInt(max))) {
+		    error("Invalid range " 
+			  + min 
+			  + " - " 
+			  + max 
+			  + " (expected values between 0 and 65535)");
+		}
+		return;
+	    }
+	}
+	catch (NumberFormatException e) { }
+	error("Invalid range " + val + " (expected NN-MM)");
+    }
+
+
+    /* User operation: set Y-axis range. */
+    void setYAxis1() {
+	String val = yText1.getText();
+
+	try {
+	    int dash = val.indexOf('-');
+	    if (dash >= 0) {
+		String min = val.substring(0, dash).trim();
+		String max = val.substring(dash + 1).trim();
+
+		if (!graph1.setYAxis(Integer.parseInt(min), Integer.parseInt(max))) {
 		    error("Invalid range " 
 			  + min 
 			  + " - " 
@@ -304,6 +458,8 @@ class Window {
     /* Notification: new data. */
     void newData() {
 	graph.newData();
+	graph0.newData();
+	graph1.newData();
     }
 
     void error(String msg) {
