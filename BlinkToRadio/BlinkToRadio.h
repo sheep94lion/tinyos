@@ -10,5 +10,6 @@ enum{
 typedef nx_struct BlinkToRadioMsg {
     nx_uint16_t nodeid;
     nx_uint16_t counter;
+    nx_uint32_t current_time;
 } BlinkToRadioMsg;
 #endif

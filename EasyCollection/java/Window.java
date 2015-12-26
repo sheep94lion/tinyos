@@ -81,9 +81,9 @@ class Window {
 	public synchronized void setValueAt(Object value, int row, int col) {
 	    colors.set(row, (Color)value);
         fireTableCellUpdated(row, col);
-        graph1.repaint();
-        graph0.repaint();
 	    graph.repaint();
+	    graph0.repaint();
+	    graph1.repaint();
         }
 
 	/* Return mote id of i'th mote */

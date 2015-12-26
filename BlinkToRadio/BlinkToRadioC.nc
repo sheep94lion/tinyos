@@ -12,6 +12,7 @@ module BlinkToRadioC {
 }
 implementation {
     uint16_t counter=0;
+    uint32_t current_time = 0;
     bool busy = FALSE;
     message_t pkt;
     event void Boot.booted(){
@@ -27,10 +28,12 @@ implementation {
     }
     event void Timer0.fired(){
         counter++;
+        current_time = call Timer0.getNow();
         if (!busy) {
             BlinkToRadioMsg* btrpkt = (BlinkToRadioMsg*) (call Packet.getPayload(&pkt, NULL));
             btrpkt->nodeid = MOTE_ID;
             btrpkt->counter = counter;
+            btrpkt->current_time = current_time;
             if (call AMSend.send(AM_BROADCAST_ADDR, &pkt, sizeof(BlinkToRadioMsg)) == SUCCESS) {
                 busy = TRUE;
             }
