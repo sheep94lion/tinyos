@@ -94,7 +94,9 @@ implementation {
 	}
 
 	event message_t* Receive.receive(message_t* msg, void* payload, uint8_t len) {
+		call Leds.led0Toggle();
 		call Leds.led1Toggle();
+		call Leds.led2Toggle();
 		if (!SerialSendBusy) {
 			EasyCollectionMsg* source = (EasyCollectionMsg*) payload;
 			EasyCollectionMsg* ecpkt = (EasyCollectionMsg*)(call Packet.getPayload(&serialpacket, NULL));
