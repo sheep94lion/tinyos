@@ -92,6 +92,7 @@ implementation {
 	}
 
 	void sendMessageT() {
+		localT.count = count;
 		memcpy(call Send.getPayload(&sendBufT, sizeof(localT)), &localT, sizeof(localT));
 		/*
 		EasyCollectionMsg* msg = (EasyCollectionMsg*)call Send.getPayload(&packet, sizeof(EasyCollectionMsg));
@@ -111,6 +112,7 @@ implementation {
 		}
 	}
 	void sendMessageP() {
+		localP.count = count;
 		memcpy(call Send.getPayload(&sendBufP, sizeof(localP)), &localP, sizeof(localP));
 		if (call Send.send(&sendBufP, sizeof(EasyCollectionMsg)) != SUCCESS){
 
@@ -121,6 +123,7 @@ implementation {
 		}
 	}
 	void sendMessageH() {
+		localH.count = count;
 		memcpy(call Send.getPayload(&sendBufH, sizeof(localH)), &localH, sizeof(localH));
 		if (call Send.send(&sendBufH, sizeof(EasyCollectionMsg)) != SUCCESS){
 			trysendH = FALSE;
