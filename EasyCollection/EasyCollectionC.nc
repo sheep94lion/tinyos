@@ -24,7 +24,7 @@ module EasyCollectionC {
 	uses interface DisseminationUpdate<uint16_t> as UpdateC;
 }
 implementation {
-	uint16_t data = 0;
+	uint16_t count = 0;
 	uint16_t TempData = 0;
 	uint16_t HumidityData = 0;
 	uint16_t PhotoData = 0;
@@ -32,8 +32,11 @@ implementation {
 	message_t serialpacket;
 	message_t sendBufT;
 	message_t sendBufP;
-	EasyCollectionMsg localT, localP;
-	uint8_t readingT, readingP;
+	message_t sendBufH;
+	EasyCollectionMsg localT, localP, localH;
+	uint8_t readingT, readingP, readingH;
+	bool ifsendP, ifsendT, ifsendH;
+	bool trysendP, trysendT, trysendH;
 	bool sendBusy = FALSE;
 	bool SerialSendBusy = FALSE;
 
@@ -41,7 +44,18 @@ implementation {
 	event void Boot.booted(){
 		call RadioControl.start();
 		call AMControl.start();
-		localT.id = 0x11;
+		localP.id = TOS_NODE_ID * 10 + 1;
+		localT.id = TOS_NODE_ID * 10 + 2;
+		localH.id = TOS_NODE_ID * 10 + 3;
+		localP.count = 0;
+		localT.count = 0;
+		localH.count = 0;
+		ifsendH = FALSE;
+		ifsendT = FALSE;
+		ifsendP = FALSE;
+		trysendP = FALSE;
+		trysendH = FALSE;
+		trysendT = FALSE;
 	}
 
 	event void RadioControl.startDone(error_t err){
@@ -52,7 +66,7 @@ implementation {
 			if (TOS_NODE_ID == 1)
 				call RootControl.setRoot();
 			else
-				call Timer.startPeriodic(200);
+				call Timer.startPeriodic(100);
 		}
 	}
 
@@ -86,7 +100,8 @@ implementation {
 		*/
 
 		if (call Send.send(&sendBufT, sizeof(EasyCollectionMsg)) != SUCCESS){
-			
+
+			trysendT = FALSE;
 		}
 		else{
 			sendBusy = TRUE;
@@ -94,17 +109,18 @@ implementation {
 	}
 	void sendMessageP() {
 		memcpy(call Send.getPayload(&sendBufP, sizeof(localP)), &localP, sizeof(localP));
-		/*
-		EasyCollectionMsg* msg = (EasyCollectionMsg*)call Send.getPayload(&packet, sizeof(EasyCollectionMsg));
-		msg->data = data;
-		msg->nodeid = TOS_NODE_ID;
-		msg->TempData = TempData;
-		msg->HumidityData = HumidityData;
-		msg->PhotoData = PhotoData;
-		*/
-
 		if (call Send.send(&sendBufP, sizeof(EasyCollectionMsg)) != SUCCESS){
-			
+
+			trysendP = FALSE;
+		}
+		else{
+			sendBusy = TRUE;
+		}
+	}
+	void sendMessageH() {
+		memcpy(call Send.getPayload(&sendBufH, sizeof(localH)), &localH, sizeof(localH));
+		if (call Send.send(&sendBufH, sizeof(EasyCollectionMsg)) != SUCCESS){
+			trysendH = FALSE;
 		}
 		else{
 			sendBusy = TRUE;
@@ -113,35 +129,93 @@ implementation {
 
 	event void Timer.fired() {
 		//call Leds.led2Toggle();
-		data++;
-		call readTemp.read();
-		//call readHumidity.read();
-		call readPhoto.read();
-		if (!sendBusy && readingP == NREADINGS)
-		{
+		bool ifreadP = TRUE;
+		bool ifreadT = TRUE;
+		bool ifreadH = TRUE;
+
+		if (readingP == NREADINGS){
 			//call Leds.led1Toggle();
-			sendMessageP();
+			ifreadP = FALSE;		
+			if(!sendBusy && !ifsendP && !trysendP){
+				localP.count++;
+				//call Leds.led0Toggle();
+				trysendP = TRUE;
+				sendMessageP();
+			}
 		}
-		if (!sendBusy && readingT == NREADINGS)
-		{
+		if (readingT == NREADINGS){
+			ifreadT = FALSE;
+			if(!sendBusy && !ifsendT && !trysendT){
+				localT.count++;
+				//call Leds.led1Toggle();
+				trysendT = TRUE;
+				sendMessageT();
+			}
 			//call Leds.led1Toggle();
-			sendMessageT();
+		}
+		if (readingH == NREADINGS){
+			//call Leds.led1Toggle();
+			ifreadH = FALSE;
+			if(!sendBusy && !ifsendH && !trysendH){
+				localH.count++;
+				//call Leds.led2Toggle();
+				trysendH = TRUE;
+				sendMessageH();
+			}
 		}
 		
-			
+		if(ifreadT){
+			call readTemp.read();
+		}
+		if(ifreadH){
+			call readHumidity.read();
+		}
+		if(ifreadP){
+			call readPhoto.read();
+		}
+				
 	}
 
 	event void Send.sendDone(message_t* m, error_t err) {
-		if (err != SUCCESS)
-			call Leds.led0Toggle();
+		//call Leds.led1Toggle();
+		EasyCollectionMsg *msg = call Send.getPayload(m, sizeof(EasyCollectionMsg));
 		sendBusy = FALSE;
-		//call Leds.led0Toggle();
-		if (readingP == NREADINGS) {
-			readingP = 0;
-		}else if (readingT == NREADINGS){
-			readingT = 0;
+		if (err != SUCCESS){
+			//call Leds.led0Toggle();
+			if (readingP == NREADINGS) {
+				trysendP = FALSE;
+			}else if (readingT == NREADINGS){
+				trysendT = FALSE;
+			}else if (readingH == NREADINGS){
+				trysendH = FALSE;
+			}
+			return;
 		}
-
+		//call Leds.led0Toggle();
+		if (msg->id == localP.id) {
+			call Leds.led0Toggle();
+			readingP = 0;
+			ifsendP = TRUE;
+			trysendP = FALSE;
+		}else if (msg->id == localT.id){
+			call Leds.led1Toggle();
+			readingT = 0;
+			ifsendT = TRUE;
+			trysendT = FALSE;
+		}else if (msg->id == localH.id){
+			call Leds.led2Toggle();
+			readingH = 0;
+			ifsendH = TRUE;
+			trysendH = FALSE;
+		}
+		if(ifsendH && ifsendT && ifsendP){
+			trysendP = FALSE;
+			trysendH = FALSE;
+			trysendT = FALSE;
+			ifsendP = FALSE;
+			ifsendT = FALSE;
+			ifsendH = FALSE;
+		}
 	}
 
 	event message_t* Receive.receive(message_t* msg, void* payload, uint8_t len) {
@@ -162,7 +236,6 @@ implementation {
 		if(result == SUCCESS){
 			val = -40.1 + 0.01*val;
 			TempData = val;
-			//call Leds.led2Toggle();
 		}
 		else{
 			TempData = 0xffff;
@@ -170,7 +243,7 @@ implementation {
 		if (readingT < NREADINGS) {
 			localT.reading[readingT++] = TempData;
 		}
-		//call Leds.led0Toggle();
+		
 	}
 	event void readHumidity.readDone(error_t result, uint16_t val){
 		if(result == SUCCESS){
@@ -180,12 +253,14 @@ implementation {
 		else{
 			HumidityData = 0xffff;
 		}
-		call Leds.led1Toggle();
+		if (readingH < NREADINGS) {
+			localH.reading[readingH++] = HumidityData;
+		}
+		
 	}
 	event void readPhoto.readDone(error_t result, uint16_t val){
 		if(result == SUCCESS){
 			PhotoData = val;
-			call Leds.led2Toggle();
 		}
 		else{
 			PhotoData = 0xffff;
@@ -193,6 +268,7 @@ implementation {
 		if (readingP < NREADINGS) {
 			localP.reading[readingP++] = PhotoData;
 		}
+		
 		
 	}
 	event void ValueI.changed() {

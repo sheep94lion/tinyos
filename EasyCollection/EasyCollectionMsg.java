@@ -7,12 +7,12 @@
 public class EasyCollectionMsg extends net.tinyos.message.Message {
 
     /** The default size of this message type in bytes. */
-    public static final int DEFAULT_MESSAGE_SIZE = 24;
+    public static final int DEFAULT_MESSAGE_SIZE = 14;
 
     /** The Active Message type associated with this message. */
     public static final int AM_TYPE = 23;
 
-    /** Create a new EasyCollectionMsg of size 24. */
+    /** Create a new EasyCollectionMsg of size 14. */
     public EasyCollectionMsg() {
         super(DEFAULT_MESSAGE_SIZE);
         amTypeSet(AM_TYPE);
@@ -92,7 +92,7 @@ public class EasyCollectionMsg extends net.tinyos.message.Message {
       } catch (ArrayIndexOutOfBoundsException aioobe) { /* Skip field */ }
       try {
         s += "  [reading=";
-        for (int i = 0; i < 10; i++) {
+        for (int i = 0; i < 5; i++) {
           s += "0x"+Long.toHexString(getElement_reading(i) & 0xffff)+" ";
         }
         s += "]\n";
@@ -254,7 +254,7 @@ public class EasyCollectionMsg extends net.tinyos.message.Message {
      */
     public static int offset_reading(int index1) {
         int offset = 32;
-        if (index1 < 0 || index1 >= 10) throw new ArrayIndexOutOfBoundsException();
+        if (index1 < 0 || index1 >= 5) throw new ArrayIndexOutOfBoundsException();
         offset += 0 + index1 * 16;
         return (offset / 8);
     }
@@ -264,7 +264,7 @@ public class EasyCollectionMsg extends net.tinyos.message.Message {
      */
     public static int offsetBits_reading(int index1) {
         int offset = 32;
-        if (index1 < 0 || index1 >= 10) throw new ArrayIndexOutOfBoundsException();
+        if (index1 < 0 || index1 >= 5) throw new ArrayIndexOutOfBoundsException();
         offset += 0 + index1 * 16;
         return offset;
     }
@@ -273,7 +273,7 @@ public class EasyCollectionMsg extends net.tinyos.message.Message {
      * Return the entire array 'reading' as a int[]
      */
     public int[] get_reading() {
-        int[] tmp = new int[10];
+        int[] tmp = new int[5];
         for (int index0 = 0; index0 < numElements_reading(0); index0++) {
             tmp[index0] = getElement_reading(index0);
         }
@@ -307,14 +307,14 @@ public class EasyCollectionMsg extends net.tinyos.message.Message {
      * Return the total size, in bytes, of the array 'reading'
      */
     public static int totalSize_reading() {
-        return (160 / 8);
+        return (80 / 8);
     }
 
     /**
      * Return the total size, in bits, of the array 'reading'
      */
     public static int totalSizeBits_reading() {
-        return 160;
+        return 80;
     }
 
     /**
@@ -342,7 +342,7 @@ public class EasyCollectionMsg extends net.tinyos.message.Message {
      * Return the number of elements in the array 'reading'
      */
     public static int numElements_reading() {
-        return 10;
+        return 5;
     }
 
     /**
@@ -350,7 +350,7 @@ public class EasyCollectionMsg extends net.tinyos.message.Message {
      * for the given dimension.
      */
     public static int numElements_reading(int dimension) {
-      int array_dims[] = { 10,  };
+      int array_dims[] = { 5,  };
         if (dimension < 0 || dimension >= 1) throw new ArrayIndexOutOfBoundsException();
         if (array_dims[dimension] == 0) throw new IllegalArgumentException("Array dimension "+dimension+" has unknown size");
         return array_dims[dimension];
