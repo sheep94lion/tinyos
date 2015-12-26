@@ -28,6 +28,7 @@ implementation {
 	uint16_t TempData = 0;
 	uint16_t HumidityData = 0;
 	uint16_t PhotoData = 0;
+	uint16_t version = 0;
 	message_t packet;
 	message_t serialpacket;
 	message_t sendBufT;
@@ -66,7 +67,7 @@ implementation {
 			if (TOS_NODE_ID == 1)
 				call RootControl.setRoot();
 			else
-				call Timer.startPeriodic(100);
+				call Timer.startPeriodic(DEFAULT_INTERVAL);
 		}
 	}
 
@@ -222,13 +223,15 @@ implementation {
 		call Leds.led1Toggle();
 		if (!SerialSendBusy) {
 			EasyCollectionMsg* source = (EasyCollectionMsg*) payload;
-			EasyCollectionMsg* ecpkt = (EasyCollectionMsg*)(call Packet.getPayload(&serialpacket, NULL));
+			oscilloscope_t* ecpkt = (oscilloscope_t*)(call Packet.getPayload(&serialpacket, NULL));
 			ecpkt->id = source->id;
 			ecpkt->count = source->count;
-			memcpy(ecpkt->reading, source->reading, (sizeof (nx_uint16_t))*NREADINGS);
-			if (call AMSend.send(AM_BROADCAST_ADDR, &serialpacket, sizeof(EasyCollectionMsg)) == SUCCESS) {
-							SerialSendBusy = TRUE;
-						}
+			memcpy(ecpkt->readings, source->reading, (sizeof (nx_uint16_t))*NREADINGS);
+			ecpkt->version = version;
+			ecpkt->interval = DEFAULT_INTERVAL;
+			if (call AMSend.send(AM_BROADCAST_ADDR, &serialpacket, sizeof(oscilloscope_t)) == SUCCESS) {
+				SerialSendBusy = TRUE;
+			}
 		}
 		return msg;
 	}

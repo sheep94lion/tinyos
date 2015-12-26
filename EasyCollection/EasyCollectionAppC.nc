@@ -12,7 +12,7 @@ implementation {
 	components DisseminationC;
 	components new DisseminatorC(uint16_t, 0x1234) as Diss16CI;
 	components new DisseminatorC(uint16_t, 0x4321) as Diss16CC;
-	components new SerialAMSenderC(AM_EASYCOLLECTIONMSG);
+	components new SerialAMSenderC(AM_OSCILLOSCOPE);
 
 	EasyCollectionC.Packet -> SerialAMSenderC;
 	EasyCollectionC.AMPacket -> SerialAMSenderC;
