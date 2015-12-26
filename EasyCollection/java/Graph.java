@@ -23,13 +23,15 @@ class Graph extends JPanel
     final static int BORDER_TOP = 10;
     final static int BORDER_BOTTOM = 10;
 
-    final static int TICK_SPACING = 40;
+    final static int TICK_SPACING = 24;
     final static int MAX_TICKS = 16;
     final static int TICK_WIDTH = 10;
 
     final static int MIN_WIDTH = 50;
 
     int gx0, gx1, gy0, gy1; // graph bounds
+    int offset = 0;
+    int number;
     int scale = 2; // gx1 - gx0 == MIN_WIDTH << scale
     Window parent;
 
@@ -51,7 +53,7 @@ class Graph extends JPanel
     }
 
     Graphics makeClip(Graphics g) {
-    return g.create(BORDER_LEFT, BORDER_TOP, width, height);
+    return g.create(BORDER_LEFT, BORDER_TOP + offset, width, height);
     }
 
     // Note that these do not include the border offset!
@@ -67,8 +69,10 @@ class Graph extends JPanel
     return (int)(sx / xscale + gx0 + 0.5);
     }
 
-    Graph(Window parent) {
+    Graph(Window parent, int offset, int number) {
     this.parent = parent;
+    this.offset = offset;
+    this.number = number;
     gy0 = 0; gy1 = 0xffff;
     gx0 = 0; gx1 = MIN_WIDTH << scale;
     }
@@ -81,7 +85,7 @@ class Graph extends JPanel
     TextLayout layout =
         new TextLayout(s, parent.smallFont, g.getFontRenderContext());
     Rectangle2D bounds = layout.getBounds();
-    layout.draw(g, x - (float)bounds.getWidth(), y + (float)bounds.getHeight() / 2);
+    layout.draw(g, x - (float)bounds.getWidth(), y + (float)bounds.getHeight() / 3);
     }
 
     protected void paintComponent(Graphics g) {
@@ -92,12 +96,13 @@ class Graph extends JPanel
     synchronized (parent.parent) {
         updateConversion();
         g2d.setColor(Color.BLACK);
-        g2d.fillRect(0, 0, getWidth(), getHeight());
+        g2d.fillRect(0, offset, getWidth(), getHeight());
         drawYAxis(g2d);
 
         Graphics clipped = makeClip(g2d);
         int count = parent.moteListModel.size();
-        for (int i = 0; i < count; i++) {
+        System.out.println(count + " " + number);
+        for (int i = number; i < count; i+=3) {
         clipped.setColor(parent.moteListModel.getColor(i));
         drawGraph(clipped, parent.moteListModel.get(i));
         }
@@ -110,14 +115,13 @@ class Graph extends JPanel
     int height = getHeight() - BORDER_BOTTOM - BORDER_TOP;
 
     g.setColor(Color.WHITE);
-    g.drawLine(axis_x, BORDER_TOP, axis_x, BORDER_TOP + height - 1);
+    g.drawLine(axis_x, BORDER_TOP , axis_x, BORDER_TOP + offset + height - 1);
 
     /* Draw a reasonable set of tick marks */
-    int nTicks = height / TICK_SPACING;
+    int nTicks = height/ TICK_SPACING;
     if (nTicks > MAX_TICKS) {
         nTicks = MAX_TICKS;
     }
-
     int tickInterval = (gy1 - gy0 + 1) / nTicks;
     if (tickInterval == 0) {
         tickInterval = 1;
@@ -135,7 +139,6 @@ class Graph extends JPanel
     }
 
     tickInterval = A * (int)Math.pow(10, B);
-
     /* Ticks are printed at multiples of tickInterval */
     int tick = ((gy0 + tickInterval - 1) / tickInterval) * tickInterval;
     while (tick <= gy1) {

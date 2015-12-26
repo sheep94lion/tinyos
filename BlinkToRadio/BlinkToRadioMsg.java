@@ -7,12 +7,12 @@
 public class BlinkToRadioMsg extends net.tinyos.message.Message {
 
     /** The default size of this message type in bytes. */
-    public static final int DEFAULT_MESSAGE_SIZE = 4;
+    public static final int DEFAULT_MESSAGE_SIZE = 8;
 
     /** The Active Message type associated with this message. */
     public static final int AM_TYPE = 6;
 
-    /** Create a new BlinkToRadioMsg of size 4. */
+    /** Create a new BlinkToRadioMsg of size 8. */
     public BlinkToRadioMsg() {
         super(DEFAULT_MESSAGE_SIZE);
         amTypeSet(AM_TYPE);
@@ -89,6 +89,9 @@ public class BlinkToRadioMsg extends net.tinyos.message.Message {
       } catch (ArrayIndexOutOfBoundsException aioobe) { /* Skip field */ }
       try {
         s += "  [counter=0x"+Long.toHexString(get_counter())+"]\n";
+      } catch (ArrayIndexOutOfBoundsException aioobe) { /* Skip field */ }
+      try {
+        s += "  [current_time=0x"+Long.toHexString(get_current_time())+"]\n";
       } catch (ArrayIndexOutOfBoundsException aioobe) { /* Skip field */ }
       return s;
     }
@@ -219,6 +222,69 @@ public class BlinkToRadioMsg extends net.tinyos.message.Message {
      */
     public static int sizeBits_counter() {
         return 16;
+    }
+
+    /////////////////////////////////////////////////////////
+    // Accessor methods for field: current_time
+    //   Field type: long, unsigned
+    //   Offset (bits): 32
+    //   Size (bits): 32
+    /////////////////////////////////////////////////////////
+
+    /**
+     * Return whether the field 'current_time' is signed (false).
+     */
+    public static boolean isSigned_current_time() {
+        return false;
+    }
+
+    /**
+     * Return whether the field 'current_time' is an array (false).
+     */
+    public static boolean isArray_current_time() {
+        return false;
+    }
+
+    /**
+     * Return the offset (in bytes) of the field 'current_time'
+     */
+    public static int offset_current_time() {
+        return (32 / 8);
+    }
+
+    /**
+     * Return the offset (in bits) of the field 'current_time'
+     */
+    public static int offsetBits_current_time() {
+        return 32;
+    }
+
+    /**
+     * Return the value (as a long) of the field 'current_time'
+     */
+    public long get_current_time() {
+        return (long)getUIntBEElement(offsetBits_current_time(), 32);
+    }
+
+    /**
+     * Set the value of the field 'current_time'
+     */
+    public void set_current_time(long value) {
+        setUIntBEElement(offsetBits_current_time(), 32, value);
+    }
+
+    /**
+     * Return the size, in bytes, of the field 'current_time'
+     */
+    public static int size_current_time() {
+        return (32 / 8);
+    }
+
+    /**
+     * Return the size, in bits, of the field 'current_time'
+     */
+    public static int sizeBits_current_time() {
+        return 32;
     }
 
 }
