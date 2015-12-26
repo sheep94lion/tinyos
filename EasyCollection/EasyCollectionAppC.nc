@@ -13,10 +13,12 @@ implementation {
 	components new DisseminatorC(uint16_t, 0x1234) as Diss16CI;
 	components new DisseminatorC(uint16_t, 0x4321) as Diss16CC;
 	components new SerialAMSenderC(AM_OSCILLOSCOPE);
+	components new SerialAMReceiverC(AM_OSCILLOSCOPE);
 
 	EasyCollectionC.Packet -> SerialAMSenderC;
 	EasyCollectionC.AMPacket -> SerialAMSenderC;
 	EasyCollectionC.AMSend -> SerialAMSenderC;
+	EasyCollectionC.SReceive -> SerialAMReceiverC;
 	EasyCollectionC.AMControl -> SerialActiveMessageC;
 	EasyCollectionC.Boot -> MainC;
 	EasyCollectionC.RadioControl -> ActiveMessageC;
@@ -25,7 +27,7 @@ implementation {
 	EasyCollectionC.Timer -> TimerMilliC;
 	EasyCollectionC.Send -> CollectionSenderC;
 	EasyCollectionC.RootControl -> Collector;
-	EasyCollectionC.Receive -> Collector.Receive[0xee];
+	EasyCollectionC.CReceive -> Collector.Receive[0xee];
 	EasyCollectionC.readTemp -> SensirionSht11C.Temperature;
 	EasyCollectionC.readHumidity -> SensirionSht11C.Humidity;
 	EasyCollectionC.readPhoto -> HamamatsuS1087ParC;

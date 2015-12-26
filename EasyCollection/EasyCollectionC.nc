@@ -11,7 +11,8 @@ module EasyCollectionC {
 	uses interface Leds;
 	uses interface Timer<TMilli>;
 	uses interface RootControl;
-	uses interface Receive;
+	uses interface Receive as CReceive;
+	uses interface Receive as SReceive;
 	uses interface Packet;
 	uses interface AMPacket;
 	uses interface AMSend;
@@ -40,6 +41,7 @@ implementation {
 	bool trysendP, trysendT, trysendH;
 	bool sendBusy = FALSE;
 	bool SerialSendBusy = FALSE;
+	bool suppressCountChange = FALSE;
 
 
 	event void Boot.booted(){
@@ -210,6 +212,10 @@ implementation {
 			trysendH = FALSE;
 		}
 		if(ifsendH && ifsendT && ifsendP){
+			if (!suppressCountChange) {
+				count++;
+				call UpdateC.change(&count);
+			}
 			trysendP = FALSE;
 			trysendH = FALSE;
 			trysendT = FALSE;
@@ -219,7 +225,7 @@ implementation {
 		}
 	}
 
-	event message_t* Receive.receive(message_t* msg, void* payload, uint8_t len) {
+	event message_t* CReceive.receive(message_t* msg, void* payload, uint8_t len) {
 		call Leds.led1Toggle();
 		if (!SerialSendBusy) {
 			EasyCollectionMsg* source = (EasyCollectionMsg*) payload;
@@ -234,6 +240,13 @@ implementation {
 			}
 		}
 		return msg;
+	}
+	event message_t* SReceive.receive(message_t* msg, void* payload, uint8_t len) {
+		oscilloscope_t *omsg = payload;
+		if (omsg->version > version) {
+			interval = omsg->interval;
+			call UpdateI.change(&interval);
+		}
 	}
 	event void readTemp.readDone(error_t result, uint16_t val){
 		if(result == SUCCESS){
@@ -275,15 +288,15 @@ implementation {
 		
 	}
 	event void ValueI.changed() {
-		//const uint16_t* newInterval = call ValueI.get();
-		//interval = *newInterval;
-		//call Timer.startPeriodic(interval);
+		const uint16_t* newInterval = call ValueI.get();
+		interval = *newInterval;
+		call Timer.startPeriodic(interval);
 	}
 	event void ValueC.changed() {
-		//const uint16_t* newCount = call ValueC.get();
-		//if (newCount > count) {
-			//count = newCount;
-			//suppressCountChange = TRUE;
-		//}
+		const uint16_t* newCount = call ValueC.get();
+		if (newCount > count) {
+			count = newCount;
+			suppressCountChange = TRUE;
+		}
 	}
 }
