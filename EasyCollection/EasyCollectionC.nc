@@ -24,30 +24,59 @@ module EasyCollectionC {
 	uses interface DisseminationUpdate<uint16_t> as UpdateI;
 }
 implementation {
-	uint16_t seq = 0;
-	uint16_t TempData = 0;
-	uint16_t HumidityData = 0;
-	uint16_t PhotoData = 0;
-	uint16_t version = 0;
-	uint16_t interval = DEFAULT_INTERVAL;
-	uint32_t current_time = 0;
-	message_t packet;
-	message_t serialpacketP, serialpacketT, serialpacketH;
-	message_t sendBuf;
-
-	EasyCollectionMsg local;
-	oscilloscope_t sendqueue[50];
-	uint8_t start = 0;
-	uint8_t end = 0;
-	bool sendBusy = FALSE;
-	bool SerialSendBusy = FALSE;
-	bool suppressCountChange = FALSE;
+	uint16_t count=0;
+    uint16_t nodeid;
+    uint16_t pre_seq_num = 0;
+    uint16_t qh = 0, qt = 0;
+    uint32_t handle_integer[2001];
+    uint32_t* handle_integer0;
+    uint32_t* handle_integer1;
+    uint32_t* handle_integer2;
+    uint16_t in0, in1, in2;
+    uint16_t out1, out2, out0;
+    uint32_t sum;
+    uint32_t min;
+    uint32_t max;
+    bool busy = FALSE;
+    bool isLost = FALSE;
+    bool medianstart = FALSE;
+    message_t pkt;
+    message_t package;
+    message_t query[12];
+    uint8_t start;
+    uint8_t end;
+    uint8_t remain;
+    uint16_t check = 1;
+    Inte inte;
+    Inte fixinte;
+    uint16_t hstart;
+    uint16_t hend;
+    uint16_t len;
+    uint8_t hready = 0;
+    uint16_t rank;
+    uint16_t imedian;
+    uint16_t pmedian;
 
 
 	event void Boot.booted(){
+		nodeid = TOS_NODE_ID;
+        sum = 0;
+        max = 0;
+        min = 0xffffffff;
+        for(uint16_t i = 0; i < 2000; i++){
+            handle_integer[i] = 0xffffffff;
+        }
+        handle_integer0 = handle_integer;
+        handle_integer1 = &handle_integer[666];
+        handle_integer2 = &handle_integer2[1333];
+        in1 = 0;
+        in2 = 0;
+        in0 = 0;
+        out0 = 0;
+        out1 = 0;
+        out2 = 0;
 		call RadioControl.start();
 		call AMControl.start();
-		local.id = TOS_NODE_ID;
 	}
 
 	event void RadioControl.startDone(error_t err){
@@ -55,15 +84,14 @@ implementation {
 			call RadioControl.start();
 		else {
 			call RoutingControl.start();
-			if (TOS_NODE_ID == 1){
+			if (TOS_NODE_ID == 49){
 				call RootControl.setRoot();
-				call Timer1.startOneShot(200);
+				remain = 0;
+			} else (TOS_NODE_ID == 50) {
+				remain = 1;
+			} else {
+				remain = 2;
 			}
-				
-			else{
-				call Timer0.startPeriodic(DEFAULT_INTERVAL);
-			}
-				
 		}
 	}
 
@@ -80,6 +108,7 @@ implementation {
 	event void AMControl.stopDone(error_t err) {}
 
 	event void AMSend.sendDone(message_t* msg, error_t error) {
+		/*
 		start = (start + 1) % 50;
 		if (end != start) {
 			oscilloscope_t* ecpkt = (oscilloscope_t*)(call Packet.getPayload(&serialpacketP, NULL));
@@ -93,18 +122,29 @@ implementation {
 		} else {
 			call Timer1.startOneShot(200);
 		}
+		*/
 	}
 
-	void sendMessage() {
-		memcpy(call Send.getPayload(&sendBuf, sizeof(local)), &local, sizeof(local));
-		if (call Send.send(&sendBuf, sizeof(EasyCollectionMsg)) != SUCCESS){
+	uint32_t getself(){
+		uint32_t r;
+		if (len == 0) {
+			return 0xffffffff;
 		}
-		else{
-			sendBusy = TRUE;
+		r = handle_integer[0];
+		if (len == 1) {
+			len--;
+			return r;
 		}
+		handle_integer[0] = handle_integer[len - 1];
+		len--;
+		Heapfy(handle_integer, 0, len);
 	}
 
 	event void Timer0.fired() {
+		while(1){
+			if (out1)
+		}
+		/*
 		seq++;
 		local.seq = seq;
 		call readPhoto.read();
@@ -114,9 +154,11 @@ implementation {
 		local.current_time = current_time;
 
 		sendMessage();
+		*/
 	}
 
 	event void Timer1.fired() {
+		/*
 		call Leds.led1Toggle();
 		if (end != start) {
 			oscilloscope_t* ecpkt = (oscilloscope_t*)(call Packet.getPayload(&serialpacketP, NULL));
@@ -130,86 +172,136 @@ implementation {
 		} else {
 			call Timer1.startOneShot(200);
 		}
+		*/
 	}
 
 	event void Send.sendDone(message_t* m, error_t err) {
-		sendBusy = FALSE;
+		if (len != 0) {
+			median();
+		}
+		//sendBusy = FALSE;
+		
 	}
+
+	task void calculate_receive(uint32_t num){
+        sum += num;
+        if(num < min){
+            min = num;
+        }
+        if(num > max){
+            max = num;
+        }
+    }
+    void buildHeap(uint32_t A[], uint16_t len){
+    	uint16_t i;
+        for(i = len / 2 - 1; i >= 0; i--){
+            Heapfy(A, i, len);
+        }
+    }
+    void Heapfy(uint32_t A[], uint16_t idx, uint16_t len){
+        uint16_t left = idx * 2 + 1;
+        uint16_t right = left + 1;
+        uint16_t largest = idx;
+        uint32_t temp;
+        if(left < len && A[left] > A[idx]){
+            largest = left;
+        }
+        if(right < len && A[largest] < A[right]){
+            largest = right;
+        }
+        if(largest != idx){
+            temp = A[largest];
+            A[largest] = A[idx];
+            A[idx] = temp;
+            Heapfy(A, largest, len);
+        }
+    }
+    void heap(){
+    	uint16_t i;
+    	for (i = 0; i < 667; i++) {
+    		if (remain == 0){
+    			handle_integer[i] = handle_integer[i*3+remain]
+    		} else {
+    			handle_integer[i+1] = handle_integer[i*3+remain]
+    		}
+    	}
+    	handle_integer = handle_integer + 1;
+    	if (remain == 0) {
+    		len = 666;
+    	} else {
+    		len = 667;
+    	}
+    	buildHeap(handle_integer, len);
+    	ValueH.change(&hready);
+    }
+
+    void median(){
+    	Median* msg = (Median*)call Send.getPayload(&package, sizeof(Median));
+    	msg->num = handle_integer[0];
+    	msg->remain = remain;
+    	handle_integer[0] = handle_integer[len - 1];
+    	len--;
+    	if (len > 0)
+    		Heapfy(handle_integer, 0, len);
+    	call Send.send(&package, sizeof(Median));   	
+    }
 
 	event message_t* CReceive.receive(message_t* msg, void* payload, uint8_t len) {
 		//call Leds.led0Toggle();
 
-		EasyCollectionMsg* source = (EasyCollectionMsg*) payload;
-		sendqueue[end].id = source->id * 10 + 1;
-		sendqueue[end].count = source->seq;
-		sendqueue[end].readings[0] = source->PhotoData;
-		sendqueue[end].version = version;
-		sendqueue[end].interval = interval;
-		sendqueue[end].current_time = source->current_time;
-		end = (end + 1) % 50;
-		sendqueue[end].id = source->id * 10 + 2;
-		sendqueue[end].count = source->seq;
-		sendqueue[end].readings[0] = source->TempData;
-		sendqueue[end].version = version;
-		sendqueue[end].interval = interval;
-		sendqueue[end].current_time = source->current_time;
-		end = (end + 1) % 50;
-		sendqueue[end].id = source->id * 10 + 3;
-		sendqueue[end].count = source->seq;
-		sendqueue[end].readings[0] = source->HumidityData;
-		sendqueue[end].version = version;
-		sendqueue[end].interval = interval;
-		sendqueue[end].current_time = source->current_time;
-		end = (end + 1) % 50;
-		call Leds.led0Toggle();
 		return msg;
 	}
 	event message_t* SReceive.receive(message_t* msg, void* payload, uint8_t len) {
-		oscilloscope_t *omsg = payload;
-		if (omsg->version > version) {
-			version = omsg->version;
-			interval = omsg->interval;
-			call UpdateI.change(&interval);
+		Data* data = (Data*) payload;
+		if (count <= 2000) {
+			handle_integer[data.sequence_number] = data.random_integer;
+			count++;
+			post calculate_receive(data.random_integer);
+			if (count == 2000) {
+				checkinte();
+				count++;
+			}
 		}
-		return msg;
 	}
-	event void readTemp.readDone(error_t result, uint16_t val){
-		if(result == SUCCESS){
-			val = -40.1 + 0.01*val;
-			TempData = val;
+	void checkinte(){
+		for (; check <= 2000; check++) {
+			if (handle_integer[check] == 0xffffffff) {
+				break;
+			}
 		}
-		else{
-			TempData = 0xffff;
+		if (check > 2000) {
+			heap()
+			return;
 		}
-		local.TempData = TempData;
-		
-	}
-	event void readHumidity.readDone(error_t result, uint16_t val){
-		if(result == SUCCESS){
-			HumidityData = -4 + 4*val/100 + (-28/1000/10000)*(val*val);
-			HumidityData = (TempData-25)*(1/100+8*val/100/1000)+HumidityData;
-		}
-		else{
-			HumidityData = 0xffff;
-		}
-		local.HumidityData = HumidityData;
-		
-	}
-	event void readPhoto.readDone(error_t result, uint16_t val){
-		if(result == SUCCESS){
-			PhotoData = val;
-		}
-		else{
-			PhotoData = 0xffff;
-		}
-		local.PhotoData = PhotoData;
-
+		inte.flag = 0;
+		inte.seq = check;
+		inte.num = 0;
+		call ValueI.change(&inte);
 	}
 	event void ValueI.changed() {
-		const uint16_t* newInterval = call ValueI.get();
-		interval = *newInterval;
-		if (TOS_NODE_ID != 1){
-			call Timer0.startPeriodic(interval);
+		const Inte* newInte = call ValueI.get();
+		if (newInte->flag == 1 && newInte->seq == check){
+			handle_integer[newInte->seq] = newInte->num;
+			checkinte();
+		} else {
+			if (handle_integer[newInte->seq] != 0xffffffff){
+				fixinte.flag = 1;
+				fixinte.seq = newInte->seq;
+				fixinte.num = handle_integer[newInte->seq];
+				ValueI.change(&fixinte);
+			}
+		}
+	}
+
+	event void ValueH.changed(){
+		hready++;
+		if (hready == 3 && TOS_NODE_ID != 49) {
+			median();
+			hready++;
+		} else if (hready == 3 && TOS_NODE_ID == 49) {
+			rank = 0;
+			hready++;
+			Timer0.startOneShot(100);
 		}
 	}
 }

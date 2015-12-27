@@ -9,17 +9,18 @@ implementation {
 	components new HamamatsuS1087ParC();
 	components new TimerMilliC() as TimerMilliC0;
 	components new TimerMilliC() as TimerMilliC1;
-	components SerialActiveMessageC;
+	components ActiveMessageC;
 	components DisseminationC;
-	components new DisseminatorC(uint16_t, 0x1234) as Diss16CI;
-	components new SerialAMSenderC(AM_OSCILLOSCOPE);
-	components new SerialAMReceiverC(AM_OSCILLOSCOPE);
+	components new DisseminatorC(Inte, 0x1234) as Diss16CI;
+	components new DisseminatorC(uint8_t, 0x1234) as Diss16CH;
+	components new AMSenderC(AM_OSCILLOSCOPE);
+	components new AMReceiverC(AM_OSCILLOSCOPE);
 
-	EasyCollectionC.Packet -> SerialAMSenderC;
-	EasyCollectionC.AMPacket -> SerialAMSenderC;
-	EasyCollectionC.AMSend -> SerialAMSenderC;
-	EasyCollectionC.SReceive -> SerialAMReceiverC;
-	EasyCollectionC.AMControl -> SerialActiveMessageC;
+	EasyCollectionC.Packet -> AMSenderC;
+	EasyCollectionC.AMPacket -> AMSenderC;
+	EasyCollectionC.AMSend -> AMSenderC;
+	EasyCollectionC.SReceive -> AMReceiverC;
+	EasyCollectionC.AMControl -> ActiveMessageC;
 	EasyCollectionC.Boot -> MainC;
 	EasyCollectionC.RadioControl -> ActiveMessageC;
 	EasyCollectionC.RoutingControl -> Collector;
@@ -35,5 +36,7 @@ implementation {
 	EasyCollectionC.DisseminationControl -> DisseminationC;
 	EasyCollectionC.ValueI -> Diss16CI;
 	EasyCollectionC.UpdateI -> Diss16CI;
+	EasyCollectionC.ValueH -> Diss16CH;
+	EasyCollectionC.UpdateH -> Diss16CH;
 
 }
