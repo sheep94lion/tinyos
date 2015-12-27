@@ -112,10 +112,10 @@ class Graph extends JPanel
         String[] array = typeString.split(" ");
         int num = Integer.parseInt(array[1])*10;
         System.out.println(array[2]);
-        if(array[2] == "L"){
+        if(array[2].startsWith("L")){
             return num + 1;
         }
-        else if(array[2] == "T"){
+        else if(array[2].startsWith("T")){
             return num + 2;
         }
         else{

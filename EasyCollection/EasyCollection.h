@@ -13,6 +13,7 @@ typedef nx_struct EasyCollectionMsg {
 	nx_uint16_t TempData;
 	nx_uint16_t HumidityData;
 	nx_uint16_t PhotoData;
+	nx_uint32_t current_time;
 } EasyCollectionMsg;
 
 typedef nx_struct oscilloscope {
@@ -21,6 +22,7 @@ typedef nx_struct oscilloscope {
   nx_uint16_t id; 
   nx_uint16_t count; 
   nx_uint16_t readings[NREADINGS];
+  nx_uint32_t current_time;
 } oscilloscope_t;
 
 #endif

@@ -138,10 +138,10 @@ class Window {
 	int getNodeId(String typeString){
 		String[] array = typeString.split(" ");
 		int num = Integer.parseInt(array[1])*10;
-		if(array[2] == "L"){
+		if(array[2].startsWith("L")){
 			return num + 1;
 		}
-		else if(array[2] == "T"){
+		else if(array[2].startsWith("T")){
 			return num + 2;
 		}
 		else{

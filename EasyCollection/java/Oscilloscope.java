@@ -40,6 +40,7 @@ public class Oscilloscope implements MessageListener
     Window window;
     int node, seqN;
     int[] myData;
+    long current_time;
     int numForThree;
     /* The current sampling period. If we receive a message from a mote
        with a newer version, we update our interval. If we receive a message
@@ -79,6 +80,7 @@ public class Oscilloscope implements MessageListener
         window.newData();
         node = id/10;
         seqN = omsg.get_count();
+        current_time = omsg.get_current_time();
         myData[id%10 - 1] = omsg.get_readings()[0];
         numForThree++;
         if(numForThree == 3){
@@ -95,7 +97,7 @@ public class Oscilloscope implements MessageListener
       try{
         FileWriter f = new FileWriter("result.txt", true);
         f.write(node + " " + seqN + " " + myData[1] + 
-          " " + myData[2] + " " + myData[0] + "\r\n");
+          " " + myData[2] + " " + myData[0] + " " + current_time + "\r\n");
         f.close();
       }
       catch(IOException e){

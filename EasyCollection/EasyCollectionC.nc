@@ -30,6 +30,7 @@ implementation {
 	uint16_t PhotoData = 0;
 	uint16_t version = 0;
 	uint16_t interval = DEFAULT_INTERVAL;
+	uint32_t current_time = 0;
 	message_t packet;
 	message_t serialpacketP, serialpacketT, serialpacketH;
 	message_t sendBuf;
@@ -87,6 +88,7 @@ implementation {
 			ecpkt->readings[0] = sendqueue[start].readings[0];
 			ecpkt->version = sendqueue[start].version;
 			ecpkt->interval = sendqueue[start].interval;
+			ecpkt->current_time = sendqueue[start].current_time;
 			call AMSend.send(AM_BROADCAST_ADDR, &serialpacketP, sizeof(oscilloscope_t));
 		} else {
 			call Timer1.startOneShot(200);
@@ -105,9 +107,12 @@ implementation {
 	event void Timer0.fired() {
 		seq++;
 		local.seq = seq;
-		call readTemp.read();
+		call readPhoto.read();
 		call readHumidity.read();
 		call readTemp.read();
+		current_time = call Timer0.getNow();
+		local.current_time = current_time;
+
 		sendMessage();
 	}
 
@@ -120,6 +125,7 @@ implementation {
 			ecpkt->readings[0] = sendqueue[start].readings[0];
 			ecpkt->version = sendqueue[start].version;
 			ecpkt->interval = sendqueue[start].interval;
+			ecpkt->current_time = sendqueue[start].current_time;
 			call AMSend.send(AM_BROADCAST_ADDR, &serialpacketP, sizeof(oscilloscope_t));
 		} else {
 			call Timer1.startOneShot(200);
@@ -139,60 +145,24 @@ implementation {
 		sendqueue[end].readings[0] = source->PhotoData;
 		sendqueue[end].version = version;
 		sendqueue[end].interval = interval;
+		sendqueue[end].current_time = source->current_time;
 		end = (end + 1) % 50;
 		sendqueue[end].id = source->id * 10 + 2;
 		sendqueue[end].count = source->seq;
 		sendqueue[end].readings[0] = source->TempData;
 		sendqueue[end].version = version;
 		sendqueue[end].interval = interval;
+		sendqueue[end].current_time = source->current_time;
 		end = (end + 1) % 50;
 		sendqueue[end].id = source->id * 10 + 3;
 		sendqueue[end].count = source->seq;
 		sendqueue[end].readings[0] = source->HumidityData;
 		sendqueue[end].version = version;
 		sendqueue[end].interval = interval;
+		sendqueue[end].current_time = source->current_time;
 		end = (end + 1) % 50;
 		call Leds.led0Toggle();
 		return msg;
-		/*
-		if (!SerialSendBusy) {
-			EasyCollectionMsg* source = (EasyCollectionMsg*) payload;
-			oscilloscope_t* ecpktP = (oscilloscope_t*)(call Packet.getPayload(&serialpacketP, NULL));
-			oscilloscope_t* ecpktT = (oscilloscope_t*)(call Packet.getPayload(&serialpacketT, NULL));
-			oscilloscope_t* ecpktH = (oscilloscope_t*)(call Packet.getPayload(&serialpacketH, NULL));
-			ecpktP->id = source->id * 10 + 1;
-			ecpktP->count = source->seq;
-			ecpktP->readings[0] = source->PhotoData;
-			ecpktP->version = version;
-			ecpktP->interval = interval;
-			ecpktT->id = source->id * 10 + 2;
-			ecpktT->count = source->seq;
-			ecpktT->readings[0] = source->TempData;
-			ecpktT->version = version;
-			ecpktT->interval = interval;
-			ecpktH->id = source->id * 10 + 3;
-			ecpktH->count = source->seq;
-			ecpktH->readings[0] = source->HumidityData;
-			ecpktH->version = version;
-			ecpktH->interval = interval;
-			memcpy(&sendqueue[end], ecpktP, (sizeof (oscilloscope_t)));
-			end = (end + 1) % 50;
-			memcpy(&sendqueue[end], ecpktP, (sizeof (oscilloscope_t)));
-			end = (end + 1) % 50;
-			memcpy(&sendqueue[end], ecpktP, (sizeof (oscilloscope_t)));
-			end = (end + 1) % 50;
-			if (call AMSend.send(AM_BROADCAST_ADDR, &serialpacketP, sizeof(oscilloscope_t)) == SUCCESS) {
-				SerialSendBusy = TRUE;
-			}
-			if (call AMSend.send(AM_BROADCAST_ADDR, &serialpacketT, sizeof(oscilloscope_t)) == SUCCESS) {
-				SerialSendBusy = TRUE;
-			}
-			if (call AMSend.send(AM_BROADCAST_ADDR, &serialpacketH, sizeof(oscilloscope_t)) == SUCCESS) {
-				SerialSendBusy = TRUE;
-			}
-		}
-		return msg;
-		*/
 	}
 	event message_t* SReceive.receive(message_t* msg, void* payload, uint8_t len) {
 		oscilloscope_t *omsg = payload;
