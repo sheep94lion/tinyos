@@ -182,7 +182,7 @@ implementation {
 			TempData = 0xffff;
 		}
 		local.TempData = TempData;
-		
+		call Leds.led0Toggle();
 	}
 	event void readHumidity.readDone(error_t result, uint16_t val){
 		if(result == SUCCESS){
@@ -193,7 +193,7 @@ implementation {
 			HumidityData = 0xffff;
 		}
 		local.HumidityData = HumidityData;
-		
+		call Leds.led1Toggle();
 	}
 	event void readPhoto.readDone(error_t result, uint16_t val){
 		if(result == SUCCESS){
@@ -203,7 +203,7 @@ implementation {
 			PhotoData = 0xffff;
 		}
 		local.PhotoData = PhotoData;
-
+		call Leds.led2Toggle();
 	}
 	event void ValueI.changed() {
 		const uint16_t* newInterval = call ValueI.get();

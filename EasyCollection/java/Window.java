@@ -215,11 +215,11 @@ class Window {
 	graphMain.setLayout(new BoxLayout(graphMain, BoxLayout.Y_AXIS));
 	main.add(graphMain, BorderLayout.CENTER);
 
-	graph = new Graph(this, 5, 0, 1000);
+	graph = new Graph(this, 5, 0, 500);
 	graphMain.add(graph);
 	graph0 = new Graph(this, 5, 1, 100);
 	graphMain.add(graph0);
-	graph1 = new Graph(this, 5, 2, 100);
+	graph1 = new Graph(this, 5, 2, 200);
 	graphMain.add(graph1);
 	// Controls. Organised using box layouts.
 	
@@ -310,7 +310,7 @@ class Window {
 	yControlMain.add(yControl1);
 
 	// Adjust Y-axis range.
-	JLabel yLabel = makeLabel("light:", JLabel.RIGHT);
+	JLabel yLabel = makeLabel("光照:", JLabel.RIGHT);
 	yText = makeTextField(12, new ActionListener() {
 		public void actionPerformed(ActionEvent e) { setYAxis(); }
 	    } );
@@ -319,7 +319,7 @@ class Window {
 	yControl.add(yText);
 
 	//0
-	JLabel yLabel0 = makeLabel("temperature:", JLabel.RIGHT);
+	JLabel yLabel0 = makeLabel("温度:", JLabel.RIGHT);
 	yText0 = makeTextField(12, new ActionListener() {
 		public void actionPerformed(ActionEvent e) { setYAxis0(); }
 	    } );
@@ -327,7 +327,7 @@ class Window {
 	yControl0.add(yLabel0);
 	yControl0.add(yText0);
 	//1
-	JLabel yLabel1 = makeLabel("humidity:", JLabel.RIGHT);
+	JLabel yLabel1 = makeLabel("湿度:", JLabel.RIGHT);
 	yText1 = makeTextField(12, new ActionListener() {
 		public void actionPerformed(ActionEvent e) { setYAxis1(); }
 	    } );

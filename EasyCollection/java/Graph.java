@@ -101,7 +101,6 @@ class Graph extends JPanel
 
         Graphics clipped = makeClip(g2d);
         int count = parent.moteListModel.size();
-        System.out.println(count + " " + number);
         for (int i = number; i < count; i+=3) {
         clipped.setColor(parent.moteListModel.getColor(i));
         drawGraph(clipped, getNodeId(parent.moteListModel.get(i)));
@@ -111,7 +110,6 @@ class Graph extends JPanel
     int getNodeId(String typeString){
         String[] array = typeString.split(" ");
         int num = Integer.parseInt(array[1])*10;
-        System.out.println(array[2]);
         if(array[2].startsWith("L")){
             return num + 1;
         }
