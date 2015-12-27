@@ -2,23 +2,23 @@
 #include "BlinkToRadio.h"
 
 configuration BlinkToRadioAppC {
-}
-implementation {
+
+} implementation {
     components MainC;
     components LedsC;
-    components BlinkToRadioC as App;
-    components new TimerMilliC() as Timer0;
+    components DAmasterC as App;
     components ActiveMessageC;
-    components new AMSenderC(AM_BLINKTORADIOMSG);
-    components new AMReceiverC(AM_BLINKTORADIOMSG);
-
+    components new AMSenderC(AM_DAMASTER);
+    components new AMReceiverC(AM_DAMASTER);
+    components SerialPrintfC;
+    components new TimerMilliC() as Timer;
+    
+    App.SplitControl -> ActiveMessageC;
     App.Boot -> MainC;
+    App.Timer -> Timer;
     App.Leds -> LedsC;
-    App.Timer0 -> Timer0;
-
     App.Packet -> AMSenderC;
     App.AMPacket -> AMSenderC;
     App.AMSend -> AMSenderC;
-    App.AMControl -> ActiveMessageC;
     App.Receive -> AMReceiverC;
 }
