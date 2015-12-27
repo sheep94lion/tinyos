@@ -15,8 +15,6 @@ module EasyCollectionC {
 	uses interface Packet;
 	uses interface AMPacket;
 	uses interface AMSend;
-	uses interface DisseminationValue<Inte> as ValueI;
-	uses interface DisseminationUpdate<Inte> as UpdateI;
 }
 implementation {
 	uint16_t count=0;
@@ -25,11 +23,6 @@ implementation {
     uint16_t qh = 0, qt = 0;
     uint32_t handle_integer[2001];
     uint32_t* handle_integerp;
-    uint32_t* handle_integer0;
-    uint32_t* handle_integer1;
-    uint32_t* handle_integer2;
-    uint16_t in0, in1, in2;
-    uint16_t out1, out2, out0;
     uint32_t sum;
     uint32_t min;
     uint32_t max;
@@ -39,9 +32,7 @@ implementation {
     message_t pkt;
     message_t package;
     message_t rp;
-    message_t query[12];
-    uint8_t start;
-    uint8_t end;
+
     uint8_t remain;
     uint16_t check = 1;
     Inte inte;
@@ -77,7 +68,7 @@ implementation {
 		if  (err != SUCCESS) {
 			call AMControl.start();
 		} else {
-			call DisseminationControl.start();
+			
 		}
 	}
 
@@ -96,6 +87,7 @@ implementation {
 	event void Timer0.fired() {
 		if(!busy) {
 			if (call AMSend.send(AM_DAMASTER, &rp, sizeof(Value)) == SUCCESS) {
+				call Leds.led0Toggle();
                 busy = TRUE;
             }
 		}
@@ -106,73 +98,43 @@ implementation {
 	event void Timer1.fired() {
 
 	}
-
-	
-
-	void calculate_receive(uint32_t num){
-        sum += num;
-        if(num < min){
-            min = num;
-        }
-        if(num > max){
-            max = num;
-        }
-    }
-    void Heapfy(uint32_t A[], uint16_t idx, uint16_t length){
-        uint16_t left = idx * 2 + 1;
-        uint16_t right = left + 1;
-        uint16_t largest = idx;
-        uint32_t temp;
-        if(left < length && A[left] > A[idx]){
-            largest = left;
-        }
-        if(right < length && A[largest] < A[right]){
-            largest = right;
-        }
-        if(largest != idx){
-            temp = A[largest];
-            A[largest] = A[idx];
-            A[idx] = temp;
-            Heapfy(A, largest, length);
-        }
-    }
-    void buildHeap(uint32_t A[], uint16_t length){
-    	uint16_t i;
-        for(i = length / 2 - 1; i >= 0; i--){
-            Heapfy(A, i, length);
-        }
-    }
     
 
 	void result() {
-		uint16_t i;
+		uint16_t i, j;
+		uint32_t temp;
 		uint32_t pre, old, item;
 		Value* ecpkt = (Value*)(call Packet.getPayload(&rp, NULL));
-		handle_integerp = &handle_integer[1];
-		buildHeap(handle_integerp, 2000);
-		call Leds.led1Toggle();
+		handle_integer[0] = handle_integer[2000];
+		call Leds.led2Toggle();
 
-		for (i = 0; i < 2000; i++) {
-			item = handle_integerp[0];
-			handle_integerp[0] = handle_integerp[len];
-			len--;
-			Heapfy(handle_integerp, 0, len);
-			if (i == 999) {
-				pre = item;
-			}
-			if (i == 1000) {
-				old = item;
-				break;
+		for (i = 1; i < 2000; i++) {
+			for (j = i; j >= 1; j--) {
+				if (handle_integer[j] < handle_integer[j - 1]){
+					temp = handle_integer[j];
+					handle_integer[j] = handle_integer[j-1];
+					handle_integer[j-1]=temp;
+				} else {
+					break;
+				}
 			}
 		}
+		pre = handle_integer[999];
+		old = handle_integer[1000];
 		ecpkt->group_id = 17;
-		ecpkt->max = max;
-		ecpkt->min = min;
+		ecpkt->max = handle_integer[1999];
+		ecpkt->min = handle_integer[0];
+		sum = 0;
+		for (i = 0; i < 2000; i++) {
+			sum = sum + handle_integer[i];
+		}
 		ecpkt->sum = sum;
 		ecpkt->average = sum / 2000;
 		ecpkt->median = (old + pre) / 2;
 		call Timer0.startPeriodic(100);
+		call Leds.led2Toggle();
 	}
+	/*
 	void checkinte(){
 		
 		for (; check <= 2000; check++) {
@@ -187,38 +149,45 @@ implementation {
 		inte.flag = 0;
 		inte.seq = check;
 		inte.num = 0;
-		call UpdateI.change(&inte);
 		call Leds.led0Toggle();
+	}
+	*/
+	void ccheck(){
+		uint16_t i;
+		call Leds.led0Toggle();
+		for (i = 1; i <= 2000; i++){
+			if (handle_integer[i] == 0xffffffff) {
+				count = 0;
+				return;
+			}
+		}
+		result();
 	}
 	event message_t* SReceive.receive(message_t* msg, void* payload, uint8_t length) {
 		Data* data = (Data*) payload;
-		call Leds.led2Toggle();
+		if(call AMPacket.source(msg) != 1000){
+			return msg;
+		}
+		call Leds.led1Toggle();
+		
+		if (count == 2000) {
+			ccheck();
+			count++;
+			return msg;
+		}
+		if (count > 2000){
+			count++;
+			return msg;
+		}
+		
 		count++;
 		handle_integer[data->sequence_number] = data->random_integer;
-		calculate_receive(data->random_integer);
-		if (count == 2000) {
-			checkinte();
-			
-		}
+
+		/*(if (count == 2000) {
+			checkinte();	
+		}*/
 		return msg;
+
 	}
 
-	
-	event void ValueI.changed() {
-		const Inte* newInte = call ValueI.get();
-		if (newInte->flag == 1 && newInte->seq == check){
-			//call Leds.led0Toggle();
-			handle_integer[newInte->seq] = newInte->num;
-			checkinte();
-			//call Leds.led0Toggle();
-		} else {
-			//call Leds.led1Toggle();
-			
-			//call Leds.led0Toggle();
-			fixinte.flag = 1;
-			fixinte.seq = newInte->seq;
-			fixinte.num = handle_integer[newInte->seq];
-			call UpdateI.change(&fixinte);
-		}
-	}
 }
