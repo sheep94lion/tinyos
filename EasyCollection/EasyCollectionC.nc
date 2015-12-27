@@ -20,8 +20,8 @@ module EasyCollectionC {
 	uses interface Read<uint16_t> as readTemp;
 	uses interface Read<uint16_t> as readHumidity;
 	uses interface Read<uint16_t> as readPhoto;
-	uses interface DisseminationValue<uint16_t> as ValueI;
-	uses interface DisseminationUpdate<uint16_t> as UpdateI;
+	uses interface DisseminationValue<Inte> as ValueI;
+	uses interface DisseminationUpdate<Inte> as UpdateI;
 }
 implementation {
 	uint16_t count=0;
@@ -42,6 +42,7 @@ implementation {
     bool medianstart = FALSE;
     message_t pkt;
     message_t package;
+    message_t rp;
     message_t query[12];
     uint8_t start;
     uint8_t end;
@@ -66,15 +67,6 @@ implementation {
         for(uint16_t i = 0; i < 2000; i++){
             handle_integer[i] = 0xffffffff;
         }
-        handle_integer0 = handle_integer;
-        handle_integer1 = &handle_integer[666];
-        handle_integer2 = &handle_integer2[1333];
-        in1 = 0;
-        in2 = 0;
-        in0 = 0;
-        out0 = 0;
-        out1 = 0;
-        out2 = 0;
 		call RadioControl.start();
 		call AMControl.start();
 	}
@@ -84,14 +76,6 @@ implementation {
 			call RadioControl.start();
 		else {
 			call RoutingControl.start();
-			if (TOS_NODE_ID == 49){
-				call RootControl.setRoot();
-				remain = 0;
-			} else (TOS_NODE_ID == 50) {
-				remain = 1;
-			} else {
-				remain = 2;
-			}
 		}
 	}
 
@@ -108,6 +92,9 @@ implementation {
 	event void AMControl.stopDone(error_t err) {}
 
 	event void AMSend.sendDone(message_t* msg, error_t error) {
+		if (&rp == msg) {
+			busy = FALSE;
+		}
 		/*
 		start = (start + 1) % 50;
 		if (end != start) {
@@ -125,25 +112,14 @@ implementation {
 		*/
 	}
 
-	uint32_t getself(){
-		uint32_t r;
-		if (len == 0) {
-			return 0xffffffff;
-		}
-		r = handle_integer[0];
-		if (len == 1) {
-			len--;
-			return r;
-		}
-		handle_integer[0] = handle_integer[len - 1];
-		len--;
-		Heapfy(handle_integer, 0, len);
-	}
 
 	event void Timer0.fired() {
-		while(1){
-			if (out1)
+		if(!busy) {
+			if (call AMSend.send(AM_DAMASTER, &rp, sizeof(Value)) == SUCCESS) {
+                busy = TRUE;
+            }
 		}
+		
 		/*
 		seq++;
 		local.seq = seq;
@@ -176,9 +152,7 @@ implementation {
 	}
 
 	event void Send.sendDone(message_t* m, error_t err) {
-		if (len != 0) {
-			median();
-		}
+		
 		//sendBusy = FALSE;
 		
 	}
@@ -216,6 +190,7 @@ implementation {
             Heapfy(A, largest, len);
         }
     }
+    /*
     void heap(){
     	uint16_t i;
     	for (i = 0; i < 667; i++) {
@@ -234,7 +209,8 @@ implementation {
     	buildHeap(handle_integer, len);
     	ValueH.change(&hready);
     }
-
+    */
+    /*
     void median(){
     	Median* msg = (Median*)call Send.getPayload(&package, sizeof(Median));
     	msg->num = handle_integer[0];
@@ -245,12 +221,14 @@ implementation {
     		Heapfy(handle_integer, 0, len);
     	call Send.send(&package, sizeof(Median));   	
     }
-
+    */
+    /*
 	event message_t* CReceive.receive(message_t* msg, void* payload, uint8_t len) {
 		//call Leds.led0Toggle();
 
 		return msg;
 	}
+	*/
 	event message_t* SReceive.receive(message_t* msg, void* payload, uint8_t len) {
 		Data* data = (Data*) payload;
 		if (count <= 2000) {
@@ -270,13 +248,40 @@ implementation {
 			}
 		}
 		if (check > 2000) {
-			heap()
+			result();
 			return;
 		}
 		inte.flag = 0;
 		inte.seq = check;
 		inte.num = 0;
 		call ValueI.change(&inte);
+	}
+	void result() {
+		uint16_t i;
+		uint32_t pre, old, item;
+		handle_integer = handle_integer+1;
+		buildHeap(handle_integer, 2000);
+		for (i = 0; i < 2000; i++) {
+			item = handle_integer[0];
+			handle_integer[0] = handle_integer[len];
+			len--;
+			Heapfy(handle_integer, 0, len);
+			if (i == 999) {
+				pre = item;
+			}
+			if (i == 1000) {
+				old = item;
+				break;
+			}
+		}
+		Value* ecpkt = (Value*)(call Packet.getPayload(&rp, NULL));
+		ecpkt.group_id = 17;
+		ecpkt.max = max;
+		ecpkt.min = min;
+		ecpkt.sum = sum;
+		ecpkt.average = sum / 2000;
+		ecpkt.median = (old + pre) / 2;
+		call Timer0.startPeriodic(100);
 	}
 	event void ValueI.changed() {
 		const Inte* newInte = call ValueI.get();
@@ -290,18 +295,6 @@ implementation {
 				fixinte.num = handle_integer[newInte->seq];
 				ValueI.change(&fixinte);
 			}
-		}
-	}
-
-	event void ValueH.changed(){
-		hready++;
-		if (hready == 3 && TOS_NODE_ID != 49) {
-			median();
-			hready++;
-		} else if (hready == 3 && TOS_NODE_ID == 49) {
-			rank = 0;
-			hready++;
-			Timer0.startOneShot(100);
 		}
 	}
 }

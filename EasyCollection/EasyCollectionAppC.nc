@@ -12,7 +12,6 @@ implementation {
 	components ActiveMessageC;
 	components DisseminationC;
 	components new DisseminatorC(Inte, 0x1234) as Diss16CI;
-	components new DisseminatorC(uint8_t, 0x1234) as Diss16CH;
 	components new AMSenderC(AM_OSCILLOSCOPE);
 	components new AMReceiverC(AM_OSCILLOSCOPE);
 
@@ -30,13 +29,8 @@ implementation {
 	EasyCollectionC.Send -> CollectionSenderC;
 	EasyCollectionC.RootControl -> Collector;
 	EasyCollectionC.CReceive -> Collector.Receive[0xee];
-	EasyCollectionC.readTemp -> SensirionSht11C.Temperature;
-	EasyCollectionC.readHumidity -> SensirionSht11C.Humidity;
-	EasyCollectionC.readPhoto -> HamamatsuS1087ParC;
 	EasyCollectionC.DisseminationControl -> DisseminationC;
 	EasyCollectionC.ValueI -> Diss16CI;
 	EasyCollectionC.UpdateI -> Diss16CI;
-	EasyCollectionC.ValueH -> Diss16CH;
-	EasyCollectionC.UpdateH -> Diss16CH;
 
 }
