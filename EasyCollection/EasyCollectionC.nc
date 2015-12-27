@@ -217,7 +217,6 @@ implementation {
 			//call Leds.led0Toggle();
 			fixinte.flag = 1;
 			fixinte.seq = newInte->seq;
-			fixinte.check = newInte->check;
 			fixinte.num = handle_integer[newInte->seq];
 			call UpdateI.change(&fixinte);
 		}
